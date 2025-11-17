@@ -5,11 +5,13 @@ const router = express.Router();
 const authRoutes = require('./authRoutes');
 const clienteRoutes = require('./clienteRoutes');
 const restauranteRoutes = require('./restauranteRoutes');
+const pedidoRoutes = require('./pedidoRoutes');
 
 // Usar rotas
 router.use('/auth', authRoutes);
 router.use('/clientes', clienteRoutes);
 router.use('/restaurantes', restauranteRoutes);
+router.use('/pedidos', pedidoRoutes);
 
 // Rota de health check
 router.get('/health', (req, res) => {

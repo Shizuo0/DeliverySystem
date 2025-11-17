@@ -18,7 +18,7 @@ class RestauranteAuthController {
   // Login de restaurante
   async login(req, res, next) {
     try {
-      const result = await restauranteAuthService.login(req.body);
+      const result = await restauranteAuthService.login(req.body.email_admin, req.body.senha_admin);
       res.json({
         message: 'Login realizado com sucesso',
         restaurante: result.restaurante,

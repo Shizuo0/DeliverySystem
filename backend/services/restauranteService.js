@@ -5,13 +5,18 @@ const Restaurante = require('../models/Restaurante');
 const EnderecoRestaurante = require('../models/EnderecoRestaurante');
 
 class RestauranteService {
-  // Obter dados do restaurante
-  async getRestaurante(restauranteId) {
+  // Obter dados do restaurante por ID (público ou autenticado)
+  async getById(restauranteId) {
     const restaurante = await restauranteRepository.findById(restauranteId);
     if (!restaurante) {
       throw new Error('Restaurante não encontrado');
     }
     return new Restaurante(restaurante);
+  }
+
+  // Obter dados do restaurante (alias para compatibilidade)
+  async getRestaurante(restauranteId) {
+    return this.getById(restauranteId);
   }
 
   // Obter restaurante com endereço
@@ -30,7 +35,7 @@ class RestauranteService {
   }
 
   // Atualizar restaurante
-  async updateRestaurante(restauranteId, updateData) {
+  async update(restauranteId, updateData) {
     const restaurante = await restauranteRepository.findById(restauranteId);
     if (!restaurante) {
       throw new Error('Restaurante não encontrado');
@@ -62,7 +67,7 @@ class RestauranteService {
   }
 
   // Deletar restaurante
-  async deleteRestaurante(restauranteId) {
+  async delete(restauranteId) {
     const deleted = await restauranteRepository.delete(restauranteId);
     if (!deleted) {
       throw new Error('Erro ao deletar restaurante');
@@ -71,15 +76,25 @@ class RestauranteService {
   }
 
   // Listar todos os restaurantes
-  async listAll() {
+  async getAll() {
     const restaurantes = await restauranteRepository.findAll();
     return restaurantes.map(r => new Restaurante(r));
   }
 
+  // Alias para compatibilidade
+  async listAll() {
+    return this.getAll();
+  }
+
   // Listar restaurantes abertos
-  async listOpen() {
+  async getOpen() {
     const restaurantes = await restauranteRepository.findOpen();
     return restaurantes.map(r => new Restaurante(r));
+  }
+
+  // Alias para compatibilidade
+  async listOpen() {
+    return this.getOpen();
   }
 
   // Atualizar status operacional

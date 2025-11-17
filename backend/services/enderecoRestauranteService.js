@@ -31,12 +31,17 @@ class EnderecoRestauranteService {
   }
 
   // Obter endereço do restaurante
-  async getByRestauranteId(restauranteId) {
+  async getByRestaurante(restauranteId) {
     const endereco = await enderecoRestauranteRepository.findByRestauranteId(restauranteId);
     if (!endereco) {
       throw new Error('Endereço não encontrado');
     }
     return new EnderecoRestaurante(endereco);
+  }
+
+  // Alias para compatibilidade
+  async getByRestauranteId(restauranteId) {
+    return this.getByRestaurante(restauranteId);
   }
 
   // Atualizar endereço
