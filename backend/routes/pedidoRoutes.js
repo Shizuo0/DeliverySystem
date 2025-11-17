@@ -8,6 +8,13 @@ const {
   createPedidoValidation,
   updateStatusValidation
 } = require('../validators/pedidoValidator');
+const { body } = require('express-validator');
+
+const assignEntregadorValidation = [
+  body('id_entregador')
+    .notEmpty().withMessage('ID do entregador é obrigatório')
+    .isInt({ min: 1 }).withMessage('ID do entregador deve ser um número inteiro positivo')
+];
 
 // ============= ROTAS DE CLIENTES (Autenticadas) =============
 // Criar novo pedido
@@ -62,6 +69,15 @@ router.put(
   updateStatusValidation,
   validate,
   pedidoController.updateStatus
+);
+
+// Atribuir entregador ao pedido
+router.put(
+  '/restaurante/:id/entregador',
+  restauranteAuthMiddleware,
+  assignEntregadorValidation,
+  validate,
+  pedidoController.assignEntregador
 );
 
 module.exports = router;

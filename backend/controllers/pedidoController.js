@@ -95,6 +95,23 @@ class PedidoController {
       next(error);
     }
   }
+
+  // Atribuir entregador ao pedido (restaurante autenticado)
+  async assignEntregador(req, res, next) {
+    try {
+      const pedido = await pedidoService.assignEntregador(
+        parseInt(req.params.id),
+        req.restauranteId,
+        req.body.id_entregador
+      );
+      res.json({
+        message: 'Entregador atribuído com sucesso',
+        pedido
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new PedidoController();
