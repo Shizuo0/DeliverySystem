@@ -70,7 +70,7 @@ class ItemCardapioService {
   }
 
   // Atualizar item
-  async update(itemId, restauranteId, itemData) {
+  async update(restauranteId, itemId, itemData) {
     // Verificar se item existe e pertence ao restaurante
     const belongsToRestaurante = await itemCardapioRepository.belongsToRestaurante(itemId, restauranteId);
     if (!belongsToRestaurante) {
