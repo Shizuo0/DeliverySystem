@@ -3,6 +3,7 @@ const itemPedidoRepository = require('../repositories/itemPedidoRepository');
 const itemCardapioRepository = require('../repositories/itemCardapioRepository');
 const restauranteRepository = require('../repositories/restauranteRepository');
 const enderecoClienteRepository = require('../repositories/enderecoClienteRepository');
+const entregadorRepository = require('../repositories/entregadorRepository');
 const Pedido = require('../models/Pedido');
 const ItemPedido = require('../models/ItemPedido');
 
@@ -212,6 +213,45 @@ class PedidoService {
     }
 
     return this.getById(pedidoId, clienteId, 'cliente');
+  }
+
+  // Atribuir entregador ao pedido (quando status = "A Caminho")
+  async assignEntregador(pedidoId, restauranteId, entregadorId) {
+    // Verificar se pedido pertence ao restaurante
+    const belongsToRestaurante = await pedidoRepository.belongsToRestaurante(pedidoId, restauranteId);
+    if (!belongsToRestaurante) {
+      throw new Error('Pedido não encontrado ou acesso negado');
+    }
+
+    // Buscar pedido
+    const pedido = await pedidoRepository.findById(pedidoId);
+
+    // Só pode atribuir entregador se pedido estiver "A Caminho"
+    if (pedido.status !== 'A Caminho') {
+      throw new Error('Entregador só pode ser atribuído quando pedido estiver "A Caminho"');
+    }
+
+    // Verificar se entregador existe
+    const entregador = await entregadorRepository.findById(entregadorId);
+    if (!entregador) {
+      throw new Error('Entregador não encontrado');
+    }
+
+    // Verificar se entregador está online
+    if (entregador.status_disponibilidade !== 'Online') {
+      throw new Error('Entregador não está disponível');
+    }
+
+    // Atribuir entregador
+    const updated = await pedidoRepository.assignEntregador(pedidoId, entregadorId);
+    if (!updated) {
+      throw new Error('Erro ao atribuir entregador');
+    }
+
+    // Atualizar status do entregador para "Em Entrega"
+    await entregadorRepository.updateStatus(entregadorId, 'Em Entrega');
+
+    return this.getById(pedidoId, restauranteId, 'restaurante');
   }
 }
 
