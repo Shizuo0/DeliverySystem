@@ -98,7 +98,7 @@ class ItemCardapioService {
   }
 
   // Deletar item
-  async delete(itemId, restauranteId) {
+  async delete(restauranteId, itemId) {
     // Verificar se item existe e pertence ao restaurante
     const belongsToRestaurante = await itemCardapioRepository.belongsToRestaurante(itemId, restauranteId);
     if (!belongsToRestaurante) {
@@ -114,7 +114,7 @@ class ItemCardapioService {
   }
 
   // Atualizar disponibilidade
-  async updateDisponibilidade(itemId, restauranteId, disponivel) {
+  async updateDisponibilidade(restauranteId, itemId, disponivel) {
     // Verificar se item existe e pertence ao restaurante
     const belongsToRestaurante = await itemCardapioRepository.belongsToRestaurante(itemId, restauranteId);
     if (!belongsToRestaurante) {

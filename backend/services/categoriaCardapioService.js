@@ -42,7 +42,7 @@ class CategoriaCardapioService {
   }
 
   // Atualizar categoria
-  async update(categoriaId, restauranteId, categoriaData) {
+  async update(restauranteId, categoriaId, categoriaData) {
     // Verificar se categoria existe e pertence ao restaurante
     const belongsToRestaurante = await categoriaCardapioRepository.belongsToRestaurante(categoriaId, restauranteId);
     if (!belongsToRestaurante) {
@@ -59,7 +59,7 @@ class CategoriaCardapioService {
   }
 
   // Deletar categoria
-  async delete(categoriaId, restauranteId) {
+  async delete(restauranteId, categoriaId) {
     // Verificar se categoria existe e pertence ao restaurante
     const belongsToRestaurante = await categoriaCardapioRepository.belongsToRestaurante(categoriaId, restauranteId);
     if (!belongsToRestaurante) {

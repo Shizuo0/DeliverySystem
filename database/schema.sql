@@ -88,7 +88,7 @@ CREATE TABLE Pedidos (
     FOREIGN KEY (id_cliente) REFERENCES Clientes (id_cliente),
     FOREIGN KEY (id_restaurante) REFERENCES Restaurantes (id_restaurante),
     FOREIGN KEY (id_endereco_cliente) REFERENCES EnderecosClientes (id_endereco_cliente),
-    FOREIGN KEY (id_entregador) REFERENCES Entregadores (id_entregador)
+    FOREIGN KEY (id_entregador) REFERENCES Entregadores (id_entregador) ON DELETE SET NULL
 );
 
 CREATE TABLE ItensPedido (
