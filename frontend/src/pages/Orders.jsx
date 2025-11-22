@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Loading from '../components/Loading';
 import api from '../services/api';
 
 function Orders() {
@@ -26,7 +27,7 @@ function Orders() {
   };
 
   if (loading) {
-    return <div>Carregando...</div>;
+    return <Loading message="Carregando pedidos..." />;
   }
 
   if (error) {
