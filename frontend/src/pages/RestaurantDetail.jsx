@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../services/restaurantService';
+import { useCart } from '../context/CartContext';
 import Loading from '../components/Loading';
 import './RestaurantDetail.css';
 
 function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addItem } = useCart();
   const [restaurant, setRestaurant] = useState(null);
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,18 @@ function RestaurantDetail() {
   const filteredMenu = selectedCategory === 'all' 
     ? menu 
     : groupedMenu[selectedCategory] || [];
+
+  const handleAddItem = (item) => {
+    addItem(
+      item,
+      {
+        id: restaurant.id,
+        nome: restaurant.nome,
+        taxa_entrega: restaurant.taxa_entrega,
+        tempo_entrega_estimado: restaurant.tempo_entrega_estimado
+      }
+    );
+  };
 
   if (loading) {
     return <Loading message="Carregando restaurante..." />;
@@ -154,7 +168,10 @@ function RestaurantDetail() {
                       <div className="unavailable-badge">Indisponível</div>
                     )}
                     {item.disponivel && isOpen && (
-                      <button className="btn-add-item">
+                      <button 
+                        className="btn-add-item"
+                        onClick={() => handleAddItem(item)}
+                      >
                         Adicionar
                       </button>
                     )}
@@ -181,7 +198,10 @@ function RestaurantDetail() {
                   <div className="unavailable-badge">Indisponível</div>
                 )}
                 {item.disponivel && isOpen && (
-                  <button className="btn-add-item">
+                  <button 
+                    className="btn-add-item"
+                    onClick={() => handleAddItem(item)}
+                  >
                     Adicionar
                   </button>
                 )}
