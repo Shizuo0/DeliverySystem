@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -14,17 +15,7 @@ function App() {
     <Router>
       <AuthProvider>
         <div className="app">
-          <nav className="navbar">
-            <div className="nav-brand">
-              <Link to="/">Delivery System</Link>
-            </div>
-            <ul className="nav-links">
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/restaurants">Restaurantes</Link></li>
-              <li><Link to="/orders">Pedidos</Link></li>
-              <li><Link to="/profile">Perfil</Link></li>
-            </ul>
-          </nav>
+          <Navbar />
           
           <main className="main-content">
             <Routes>

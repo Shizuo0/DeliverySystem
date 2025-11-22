@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Loading from '../components/Loading';
 import api from '../services/api';
 
 function Restaurants() {
@@ -23,7 +24,7 @@ function Restaurants() {
   };
 
   if (loading) {
-    return <div>Carregando...</div>;
+    return <Loading message="Carregando restaurantes..." />;
   }
 
   if (error) {
