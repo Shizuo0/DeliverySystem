@@ -10,6 +10,9 @@ function Navbar() {
     return location.pathname === path ? 'active' : '';
   };
 
+  const isRestaurantOwner = user && user.tipo === 'restaurante';
+  const isClient = user && user.tipo === 'cliente';
+
   return (
     <nav className="navbar">
       <div className="nav-brand">
@@ -19,14 +22,38 @@ function Navbar() {
         <li>
           <Link to="/" className={isActive('/')}>Home</Link>
         </li>
-        <li>
-          <Link to="/restaurants" className={isActive('/restaurants')}>Restaurantes</Link>
-        </li>
-        {user ? (
+        
+        {/* Menu para clientes ou visitantes */}
+        {!isRestaurantOwner && (
+          <li>
+            <Link to="/restaurants" className={isActive('/restaurants')}>Restaurantes</Link>
+          </li>
+        )}
+
+        {/* Menu para restaurantes */}
+        {isRestaurantOwner && (
           <>
             <li>
-              <Link to="/orders" className={isActive('/orders')}>Pedidos</Link>
+              <Link to="/admin/restaurant" className={isActive('/admin/restaurant')}>
+                Meu Restaurante
+              </Link>
             </li>
+            <li>
+              <Link to="/admin/menu" className={isActive('/admin/menu')}>
+                Cardápio
+              </Link>
+            </li>
+          </>
+        )}
+
+        {/* Menu para usuários logados */}
+        {user ? (
+          <>
+            {isClient && (
+              <li>
+                <Link to="/orders" className={isActive('/orders')}>Pedidos</Link>
+              </li>
+            )}
             <li>
               <Link to="/profile" className={isActive('/profile')}>
                 Perfil

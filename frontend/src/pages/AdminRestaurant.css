@@ -1,0 +1,174 @@
+.admin-restaurant {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn-toggle-status {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle-status.open {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.btn-toggle-status.open:hover {
+  background-color: #C8E6C9;
+}
+
+.btn-toggle-status.closed {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.btn-toggle-status.closed:hover {
+  background-color: #FFCDD2;
+}
+
+.restaurant-info-card {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+}
+
+.view-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.info-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+}
+
+.info-field:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-field strong {
+  color: var(--text-dark);
+  font-weight: 600;
+  min-width: 150px;
+}
+
+.info-field span {
+  color: var(--text-light);
+  text-align: right;
+  flex: 1;
+}
+
+.status-open {
+  color: #2E7D32 !important;
+  font-weight: 600 !important;
+}
+
+.status-closed {
+  color: #C62828 !important;
+  font-weight: 600 !important;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: var(--white);
+  resize: vertical;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-red);
+  box-shadow: 0 0 0 3px rgba(234, 29, 44, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
+
+  .info-field {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-field span {
+    text-align: left;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}

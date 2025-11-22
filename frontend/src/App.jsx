@@ -7,7 +7,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Restaurants from './pages/Restaurants';
+import RestaurantDetail from './pages/RestaurantDetail';
 import Orders from './pages/Orders';
+import AdminRestaurant from './pages/AdminRestaurant';
+import AdminMenu from './pages/AdminMenu';
 import './App.css';
 
 function App() {
@@ -23,6 +26,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/restaurants" element={<Restaurants />} />
+              <Route path="/restaurants/:id" element={<RestaurantDetail />} />
               <Route 
                 path="/orders" 
                 element={
@@ -36,6 +40,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/restaurant" 
+                element={
+                  <ProtectedRoute>
+                    <AdminRestaurant />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/menu" 
+                element={
+                  <ProtectedRoute>
+                    <AdminMenu />
                   </ProtectedRoute>
                 } 
               />

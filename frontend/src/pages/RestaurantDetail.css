@@ -1,0 +1,230 @@
+.restaurant-detail {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.btn-back {
+  background: transparent;
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.btn-back:hover {
+  background-color: var(--background-light);
+  transform: none;
+}
+
+.restaurant-header {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.restaurant-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.restaurant-info h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-badge.open {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.status-badge.closed {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.restaurant-description {
+  color: var(--text-light);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.restaurant-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+}
+
+.warning-message {
+  background-color: #FFF3E0;
+  color: #E65100;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #FF9800;
+}
+
+.menu-section h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+}
+
+.category-filter {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.category-filter button {
+  background-color: var(--white);
+  color: var(--text-dark);
+  border: 2px solid var(--border-color);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.category-filter button:hover {
+  border-color: var(--primary-red);
+  color: var(--primary-red);
+  background-color: var(--white);
+}
+
+.category-filter button.active {
+  background-color: var(--primary-red);
+  border-color: var(--primary-red);
+  color: var(--white);
+}
+
+.category-section {
+  margin-bottom: 3rem;
+}
+
+.category-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-red);
+}
+
+.menu-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.menu-item {
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.menu-item:hover {
+  box-shadow: var(--shadow);
+}
+
+.menu-item.unavailable {
+  opacity: 0.6;
+  background-color: #f5f5f5;
+}
+
+.menu-item-info {
+  flex: 1;
+}
+
+.menu-item-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--text-dark);
+}
+
+.menu-item-description {
+  color: var(--text-light);
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.menu-item-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-red);
+  margin: 0;
+}
+
+.unavailable-badge {
+  background-color: #FFEBEE;
+  color: #C62828;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn-add-item {
+  background-color: var(--primary-red);
+  color: var(--white);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--text-light);
+  padding: 3rem;
+  background-color: var(--white);
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .restaurant-header {
+    padding: 1.5rem;
+  }
+
+  .restaurant-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-add-item {
+    width: 100%;
+  }
+}
