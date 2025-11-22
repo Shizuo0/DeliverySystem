@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Loading from '../components/Loading';
 import api from '../services/api';
+import './Orders.css';
 
 function Orders() {
   const [orders, setOrders] = useState([]);

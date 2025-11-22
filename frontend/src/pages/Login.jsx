@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isValidEmail } from '../utils/formatters';
+import './Auth.css';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -60,8 +61,14 @@ function Login() {
     setLoading(true);
     
     try {
-      await login(formData);
-      navigate('/profile');
+      const result = await login(formData);
+      const userType = result?.user?.tipo;
+
+      if (userType === 'restaurante') {
+        navigate('/admin/restaurant');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.');
     } finally {

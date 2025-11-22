@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Loading from '../components/Loading';
 import { getRestaurants } from '../services/restaurantService';
+import './Restaurants.css';
 
 function Restaurants() {
   const [restaurants, setRestaurants] = useState([]);

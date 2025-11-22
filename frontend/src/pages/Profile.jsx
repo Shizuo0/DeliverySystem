@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatCPF, formatPhone, removeFormatting, isValidPhone } from '../utils/formatters';
 import Loading from '../components/Loading';
 import api from '../services/api';
+import './Profile.css';
 
 function Profile() {
   const { user, logout, updateUser } = useAuth();

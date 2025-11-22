@@ -10,7 +10,15 @@ const app = express();
 
 // Middlewares de segurança e configuração
 app.use(helmet());
-app.use(cors());
+
+// Configuração CORS
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

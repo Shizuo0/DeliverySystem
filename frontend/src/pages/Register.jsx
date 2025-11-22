@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { formatCPF, formatPhone, removeFormatting, isValidCPF, isValidEmail, isValidPhone } from '../utils/formatters';
+import './Auth.css';
 
 function Register() {
   const [formData, setFormData] = useState({

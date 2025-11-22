@@ -1,0 +1,137 @@
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm-dialog {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 440px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.confirm-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.confirm-header h3 {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 1.25rem;
+}
+
+.confirm-body {
+  padding: 1.5rem;
+}
+
+.confirm-body p {
+  margin: 0;
+  color: var(--text-light);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.confirm-actions {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel-dialog,
+.btn-confirm-dialog {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-cancel-dialog {
+  background-color: transparent;
+  color: var(--text-dark);
+  border: 2px solid var(--border-color);
+}
+
+.btn-cancel-dialog:hover {
+  border-color: var(--text-dark);
+  background-color: var(--background-light);
+  transform: none;
+}
+
+.btn-confirm-dialog {
+  color: var(--white);
+}
+
+.btn-confirm-danger {
+  background-color: #f44336;
+}
+
+.btn-confirm-danger:hover {
+  background-color: #d32f2f;
+}
+
+.btn-confirm-warning {
+  background-color: #ff9800;
+}
+
+.btn-confirm-warning:hover {
+  background-color: #f57c00;
+}
+
+.btn-confirm-info {
+  background-color: var(--primary-red);
+}
+
+.btn-confirm-info:hover {
+  background-color: var(--primary-red-hover);
+}
+
+@media (max-width: 480px) {
+  .confirm-dialog {
+    width: 95%;
+  }
+
+  .confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel-dialog,
+  .btn-confirm-dialog {
+    width: 100%;
+  }
+}

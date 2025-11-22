@@ -1,0 +1,43 @@
+.empty-state {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.empty-state-icon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.6;
+}
+
+.empty-state-title {
+  margin: 0 0 1rem 0;
+  color: var(--text-dark);
+  font-size: 1.5rem;
+}
+
+.empty-state-message {
+  margin: 0 0 2rem 0;
+  color: var(--text-light);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.empty-state-action {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 3rem 1.5rem;
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+  }
+}
