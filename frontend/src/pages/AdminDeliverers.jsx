@@ -22,8 +22,12 @@ function AdminDeliverers() {
     email: '',
     senha: '',
     telefone: '',
-    status_disponibilidade: 'Offline'
+    status_disponibilidade: 'Indisponivel'
   });
+
+  const [readyOrders, setReadyOrders] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedDelivererId, setSelectedDelivererId] = useState(null);
 
   useEffect(() => {
     if (user?.tipo !== 'restaurante') {
@@ -32,6 +36,9 @@ function AdminDeliverers() {
     }
 
     loadDeliverers();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadDeliverers, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadDeliverers = async () => {
@@ -43,6 +50,60 @@ function AdminDeliverers() {
       toast.error('Erro ao carregar entregadores');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReadyOrders = async () => {
+    try {
+      const response = await api.get('/pedidos/restaurante?status=Pronto');
+      setReadyOrders(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos prontos:', error);
+      toast.error('Erro ao carregar pedidos prontos');
+    }
+  };
+
+  const handleOpenAssignModal = (delivererId) => {
+    setSelectedDelivererId(delivererId);
+    setAssignModalOpen(true);
+    loadReadyOrders();
+  };
+
+  const handleAssignOrder = async (orderId) => {
+    if (!orderId) {
+      toast.warning('Selecione um pedido');
+      return;
+    }
+
+    try {
+      // 1. Assign deliverer to order
+      await api.put(`/pedidos/restaurante/${orderId}/entregador`, {
+        id_entregador: selectedDelivererId
+      });
+
+      // 2. Update order status to 'A Caminho'
+      await api.put(`/pedidos/restaurante/${orderId}/status`, { status: 'A Caminho' });
+
+      toast.success('Pedido atribuído com sucesso');
+      setAssignModalOpen(false);
+      setSelectedDelivererId(null);
+      loadDeliverers();
+    } catch (error) {
+      console.error('Erro ao atribuir pedido:', error);
+      toast.error('Erro ao atribuir pedido');
+    }
+  };
+
+  const handleCompleteDelivery = async (orderId) => {
+    if (!confirm('Confirmar que o pedido foi entregue?')) return;
+
+    try {
+      await api.put(`/pedidos/restaurante/${orderId}/status`, { status: 'Entregue' });
+      toast.success('Entrega confirmada com sucesso');
+      loadDeliverers();
+    } catch (error) {
+      console.error('Erro ao confirmar entrega:', error);
+      toast.error('Erro ao confirmar entrega');
     }
   };
 
@@ -127,7 +188,7 @@ function AdminDeliverers() {
       email: '',
       senha: '',
       telefone: '',
-      status_disponibilidade: 'Offline'
+      status_disponibilidade: 'Indisponivel'
     });
     setEditingId(null);
     setShowForm(false);
@@ -135,8 +196,10 @@ function AdminDeliverers() {
 
   const getStatusClass = (status) => {
     const map = {
-      'Online': 'status-online',
-      'Offline': 'status-offline',
+      'Disponivel': 'status-online',
+      'Online': 'status-online', // Fallback
+      'Indisponivel': 'status-offline',
+      'Offline': 'status-offline', // Fallback
       'Em Entrega': 'status-delivering'
     };
     return map[status] || '';
@@ -144,9 +207,9 @@ function AdminDeliverers() {
 
   const stats = {
     total: deliverers.length,
-    online: deliverers.filter(d => d.status_disponibilidade === 'Online').length,
+    online: deliverers.filter(d => d.status_disponibilidade === 'Disponivel' || d.status_disponibilidade === 'Online').length,
     delivering: deliverers.filter(d => d.status_disponibilidade === 'Em Entrega').length,
-    offline: deliverers.filter(d => d.status_disponibilidade === 'Offline').length
+    offline: deliverers.filter(d => d.status_disponibilidade === 'Indisponivel' || d.status_disponibilidade === 'Offline').length
   };
 
   if (loading) {
@@ -174,7 +237,7 @@ function AdminDeliverers() {
           </div>
           <div className="stat-card highlight-green">
             <span className="stat-value">{stats.online}</span>
-            <span className="stat-label">Online</span>
+            <span className="stat-label">Disponíveis</span>
           </div>
           <div className="stat-card highlight-blue">
             <span className="stat-value">{stats.delivering}</span>
@@ -182,7 +245,7 @@ function AdminDeliverers() {
           </div>
           <div className="stat-card">
             <span className="stat-value">{stats.offline}</span>
-            <span className="stat-label">Offline</span>
+            <span className="stat-label">Indisponíveis</span>
           </div>
         </div>
 
@@ -255,8 +318,8 @@ function AdminDeliverers() {
                     value={formData.status_disponibilidade}
                     onChange={handleChange}
                   >
-                    <option value="Online">Online</option>
-                    <option value="Offline">Offline</option>
+                    <option value="Disponivel">Disponível</option>
+                    <option value="Indisponivel">Indisponível</option>
                     <option value="Em Entrega">Em Entrega</option>
                   </select>
                 </div>
@@ -299,14 +362,41 @@ function AdminDeliverers() {
                   </span>
                 </div>
 
+                {/* Active Order Info */}
+                {deliverer.active_order_id && (
+                  <div className="active-order-info">
+                    <h4>📦 Pedido em Andamento</h4>
+                    <p><strong>Pedido #{deliverer.active_order_id}</strong></p>
+                    <p>Cliente: {deliverer.active_order_client_name}</p>
+                    <button 
+                      className="btn-success btn-sm full-width"
+                      onClick={() => handleCompleteDelivery(deliverer.active_order_id)}
+                    >
+                      ✅ Confirmar Entrega
+                    </button>
+                  </div>
+                )}
+
+                {/* Assign Button */}
+                {(deliverer.status_disponibilidade === 'Disponivel' || deliverer.status_disponibilidade === 'Online') && !deliverer.active_order_id && (
+                  <button 
+                    className="btn-primary btn-sm full-width mb-3"
+                    style={{ marginBottom: '1rem' }}
+                    onClick={() => handleOpenAssignModal(deliverer.id_entregador)}
+                  >
+                    🚴 Atribuir Pedido
+                  </button>
+                )}
+
                 <div className="deliverer-actions">
                   <select
                     value={deliverer.status_disponibilidade}
                     onChange={(e) => handleStatusUpdate(deliverer.id_entregador, e.target.value)}
                     className="status-select"
+                    disabled={!!deliverer.active_order_id}
                   >
-                    <option value="Online">Online</option>
-                    <option value="Offline">Offline</option>
+                    <option value="Disponivel">Disponível</option>
+                    <option value="Indisponivel">Indisponível</option>
                     <option value="Em Entrega">Em Entrega</option>
                   </select>
 
@@ -320,6 +410,7 @@ function AdminDeliverers() {
                   <button
                     className="btn-danger btn-sm"
                     onClick={() => setDeleteId(deliverer.id_entregador)}
+                    disabled={!!deliverer.active_order_id}
                   >
                     🗑️ Excluir
                   </button>
@@ -328,6 +419,51 @@ function AdminDeliverers() {
             ))
           )}
         </div>
+
+        {/* Assign Order Modal */}
+        {assignModalOpen && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h2>Atribuir Pedido</h2>
+              <p>Selecione um pedido pronto para entrega:</p>
+              
+              {readyOrders.length === 0 ? (
+                <div className="empty-state-small">
+                  <p>Nenhum pedido com status "Pronto" disponível.</p>
+                </div>
+              ) : (
+                <div className="order-selection-list">
+                  {readyOrders.map(order => (
+                    <div key={order.id_pedido} className="order-selection-item">
+                      <div className="order-selection-info">
+                        <strong>#{order.id_pedido}</strong> - {order.cliente_nome}
+                        <br />
+                        <span className="text-muted">
+                          {new Date(order.data_pedido).toLocaleTimeString()} - R$ {Number(order.total).toFixed(2)}
+                        </span>
+                      </div>
+                      <button 
+                        className="btn-primary btn-sm"
+                        onClick={() => handleAssignOrder(order.id_pedido)}
+                      >
+                        Atribuir
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button 
+                  className="btn-secondary"
+                  onClick={() => setAssignModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {deleteId && (
           <ConfirmDialog

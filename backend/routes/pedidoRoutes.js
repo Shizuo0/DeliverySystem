@@ -6,7 +6,8 @@ const restauranteAuthMiddleware = require('../middlewares/restauranteAuthMiddlew
 const validate = require('../middlewares/validate');
 const {
   createPedidoValidation,
-  updateStatusValidation
+  updateStatusValidation,
+  updateStatusByEntregadorValidation
 } = require('../validators/pedidoValidator');
 const { body } = require('express-validator');
 
@@ -85,6 +86,21 @@ router.put(
   assignEntregadorValidation,
   validate,
   pedidoController.assignEntregador
+);
+
+// ============= ROTAS DE ENTREGADORES =============
+// Atualizar status do pedido (Entregador)
+router.put(
+  '/:id/status-entregador',
+  updateStatusByEntregadorValidation,
+  validate,
+  pedidoController.updateStatusByEntregador
+);
+
+// Listar pedidos do entregador
+router.get(
+  '/entregador/:id',
+  pedidoController.listByEntregador
 );
 
 module.exports = router;

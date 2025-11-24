@@ -77,7 +77,7 @@ CREATE TABLE Entregadores (
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     telefone VARCHAR(20) NOT NULL UNIQUE,
-    status_disponibilidade ENUM('Online', 'Offline', 'Em Entrega') NOT NULL DEFAULT 'Offline'
+    status_disponibilidade ENUM('Disponivel', 'Indisponivel', 'Em Entrega') NOT NULL DEFAULT 'Indisponivel'
 );
 
 CREATE TABLE Pedidos (
@@ -87,7 +87,7 @@ CREATE TABLE Pedidos (
     id_endereco_cliente INT NOT NULL,
     id_entregador INT NULL,
     data_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('Pendente', 'Confirmado', 'Em Preparo', 'A Caminho', 'Entregue', 'Cancelado') NOT NULL DEFAULT 'Pendente',
+    status ENUM('Pendente', 'Confirmado', 'Em Preparo', 'Pronto', 'A Caminho', 'Entregue', 'Cancelado') NOT NULL DEFAULT 'Pendente',
     valor_total DECIMAL(10,2) NOT NULL,
     metodo_pagamento VARCHAR(50) NOT NULL,
     FOREIGN KEY (id_cliente) REFERENCES Clientes (id_cliente),

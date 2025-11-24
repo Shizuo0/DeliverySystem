@@ -12,7 +12,7 @@ class EntregadorRepository {
       entregadorData.email,
       entregadorData.senha,
       entregadorData.telefone,
-      entregadorData.status_disponibilidade || 'Offline'
+      entregadorData.status_disponibilidade || 'Indisponivel'
     ]);
     return result.insertId;
   }
@@ -33,7 +33,17 @@ class EntregadorRepository {
 
   // Listar todos
   async findAll() {
-    const query = 'SELECT * FROM Entregadores ORDER BY nome';
+    const query = `
+      SELECT 
+        e.*,
+        p.id_pedido as active_order_id,
+        p.status as active_order_status,
+        c.nome as active_order_client_name
+      FROM Entregadores e
+      LEFT JOIN Pedidos p ON e.id_entregador = p.id_entregador AND p.status = 'A Caminho'
+      LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
+      ORDER BY e.nome
+    `;
     const [rows] = await db.execute(query);
     return rows;
   }
@@ -47,7 +57,7 @@ class EntregadorRepository {
 
   // Listar entregadores online
   async findOnline() {
-    return this.findByStatus('Online');
+    return this.findByStatus('Disponivel');
   }
 
   // Atualizar entregador

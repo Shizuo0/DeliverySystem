@@ -6,18 +6,32 @@ class Entregador {
     this.telefone = entregadorData.telefone;
     this.status_disponibilidade = entregadorData.status_disponibilidade;
     
+    if (entregadorData.active_order_id) {
+      this.active_order = {
+        id: entregadorData.active_order_id,
+        status: entregadorData.active_order_status,
+        client_name: entregadorData.active_order_client_name
+      };
+    }
+
     // Não expor senha
     this.senha = undefined;
   }
 
   toJSON() {
-    return {
+    const obj = {
       id_entregador: this.id_entregador,
       nome: this.nome,
       email: this.email,
       telefone: this.telefone,
       status_disponibilidade: this.status_disponibilidade
     };
+
+    if (this.active_order) {
+      obj.active_order = this.active_order;
+    }
+
+    return obj;
   }
 }
 

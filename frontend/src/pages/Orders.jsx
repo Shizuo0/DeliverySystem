@@ -59,6 +59,7 @@ function Orders() {
     const lower = status.toLowerCase();
     if (lower === 'em preparo') return 'em_preparo';
     if (lower === 'a caminho') return 'em_entrega';
+    if (lower === 'aguardando confirmação') return 'aguardando_confirmacao';
     return lower;
   };
 
@@ -68,6 +69,7 @@ function Orders() {
     em_preparo: 'status-preparing',
     pronto: 'status-ready',
     em_entrega: 'status-delivering',
+    aguardando_confirmacao: 'status-waiting-confirmation',
     entregue: 'status-delivered',
     cancelado: 'status-cancelled'
   };
@@ -78,6 +80,7 @@ function Orders() {
     em_preparo: 'Em preparo',
     pronto: 'Pronto',
     em_entrega: 'Em entrega',
+    aguardando_confirmacao: 'Aguardando Confirmação',
     entregue: 'Entregue',
     cancelado: 'Cancelado'
   };
@@ -108,8 +111,8 @@ function Orders() {
               const total = Number(order.total ?? order.valor_total ?? 0);
               const canReview = statusKey === 'entregue' && !order.avaliacao;
               const canCancel = statusKey === 'pendente';
-              // Mostrar botão de confirmar entrega para qualquer status não finalizado (para testes)
-              const canConfirmDelivery = statusKey !== 'entregue' && statusKey !== 'cancelado';
+              // Mostrar botão de confirmar entrega apenas quando estiver "A Caminho" ou "Aguardando Confirmação"
+              const canConfirmDelivery = statusKey === 'em_entrega' || statusKey === 'aguardando_confirmacao';
 
               return (
                 <article key={order.id_pedido || order.id} className="order-card">

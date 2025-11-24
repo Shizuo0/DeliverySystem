@@ -104,6 +104,12 @@
   color: #721c24;
 }
 
+.status-waiting-confirmation {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
 .order-card-body {
   display: flex;
   flex-direction: column;

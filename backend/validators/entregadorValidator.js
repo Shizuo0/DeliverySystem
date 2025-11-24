@@ -47,7 +47,7 @@ const updateEntregadorValidation = [
 const updateStatusEntregadorValidation = [
   body('status')
     .notEmpty().withMessage('Status é obrigatório')
-    .isIn(['Online', 'Offline', 'Em Entrega']).withMessage('Status deve ser "Online", "Offline" ou "Em Entrega"')
+    .isIn(['Disponivel', 'Indisponivel', 'Em Entrega']).withMessage('Status deve ser "Disponivel", "Indisponivel" ou "Em Entrega"')
 ];
 
 module.exports = {

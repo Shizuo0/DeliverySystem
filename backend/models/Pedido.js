@@ -9,7 +9,11 @@ class Pedido {
     this.status = pedidoData.status;
     this.valor_total = pedidoData.valor_total;
     this.metodo_pagamento = pedidoData.metodo_pagamento;
-    this.avaliacao = pedidoData.id_avaliacao ? true : false;
+    this.avaliacao = pedidoData.id_avaliacao ? {
+      id: pedidoData.id_avaliacao,
+      nota: pedidoData.nota,
+      comentario: pedidoData.comentario
+    } : null;
 
     // Campos opcionais que podem vir de joins
     this.cliente_nome = pedidoData.cliente_nome;

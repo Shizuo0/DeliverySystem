@@ -27,8 +27,8 @@ function AdminOrders() {
     loadOrders();
     loadDeliverers();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(loadOrders, 30000);
+    // Atualizar a cada 10 segundos
+    const interval = setInterval(loadOrders, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -54,12 +54,12 @@ function AdminOrders() {
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
-    // Se o próximo status for "A Caminho" (em_entrega), precisa associar entregador
-    if (newStatus === 'em_entrega') {
-      const onlineDeliverers = deliverers.filter(d => d.status_disponibilidade === 'Online');
+    // Se o próximo status for "A Caminho", precisa associar entregador
+    if (newStatus === 'A Caminho') {
+      const onlineDeliverers = deliverers.filter(d => d.status_disponibilidade === 'Disponivel');
       
       if (onlineDeliverers.length === 0) {
-        toast.warning('Não há entregadores online disponíveis. Cadastre ou coloque um entregador online.');
+        toast.warning('Não há entregadores disponíveis. Cadastre ou coloque um entregador como disponível.');
         return;
       }
 
@@ -89,7 +89,7 @@ function AdminOrders() {
         id_entregador: parseInt(selectedDeliverer)
       });
 
-      await api.put(`/pedidos/restaurante/${showDelivererModal}/status`, { status: 'em_entrega' });
+      await api.put(`/pedidos/restaurante/${showDelivererModal}/status`, { status: 'A Caminho' });
       
       toast.success('Entregador associado e pedido enviado para entrega');
       setShowDelivererModal(null);
@@ -104,37 +104,30 @@ function AdminOrders() {
 
   const getStatusClass = (status) => {
     const statusMap = {
-      pendente: 'status-pending',
-      confirmado: 'status-confirmed',
-      em_preparo: 'status-preparing',
-      pronto: 'status-ready',
-      em_entrega: 'status-delivering',
-      entregue: 'status-delivered',
-      cancelado: 'status-cancelled'
+      'Pendente': 'status-pending',
+      'Confirmado': 'status-confirmed',
+      'Em Preparo': 'status-preparing',
+      'Pronto': 'status-ready',
+      'A Caminho': 'status-delivering',
+      'Aguardando Confirmação': 'status-waiting-confirmation',
+      'Entregue': 'status-delivered',
+      'Cancelado': 'status-cancelled'
     };
     return statusMap[status] || '';
   };
 
   const getStatusLabel = (status) => {
-    const labelMap = {
-      pendente: 'Pendente',
-      confirmado: 'Confirmado',
-      em_preparo: 'Em Preparo',
-      pronto: 'Pronto',
-      em_entrega: 'Em Entrega',
-      entregue: 'Entregue',
-      cancelado: 'Cancelado'
-    };
-    return labelMap[status] || status;
+    return status;
   };
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
-      pendente: 'confirmado',
-      confirmado: 'em_preparo',
-      em_preparo: 'pronto',
-      pronto: 'em_entrega',
-      em_entrega: 'entregue'
+      'Pendente': 'Confirmado',
+      'Confirmado': 'Em Preparo',
+      'Em Preparo': 'Pronto',
+      'Pronto': 'A Caminho',
+      'A Caminho': 'Entregue', // Restaurant can still force complete if needed, or we can remove this
+      'Aguardando Confirmação': 'Entregue'
     };
     return statusFlow[currentStatus];
   };
@@ -147,17 +140,17 @@ function AdminOrders() {
   const filteredOrders = orders.filter((order) => {
     if (filter === 'all') return true;
     if (filter === 'active') {
-      return !['entregue', 'cancelado'].includes(order.status);
+      return !['Entregue', 'Cancelado'].includes(order.status);
     }
     return order.status === filter;
   });
 
   const stats = {
     total: orders.length,
-    pendente: orders.filter((o) => o.status === 'pendente').length,
-    em_preparo: orders.filter((o) => o.status === 'em_preparo').length,
-    pronto: orders.filter((o) => o.status === 'pronto').length,
-    em_entrega: orders.filter((o) => o.status === 'em_entrega').length
+    pendente: orders.filter((o) => o.status === 'Pendente').length,
+    em_preparo: orders.filter((o) => o.status === 'Em Preparo').length,
+    pronto: orders.filter((o) => o.status === 'Pronto').length,
+    em_entrega: orders.filter((o) => o.status === 'A Caminho').length
   };
 
   if (loading) {
@@ -168,29 +161,36 @@ function AdminOrders() {
     <div className="admin-orders-page">
       <div className="admin-orders-container">
         <div className="page-header">
-          <h1>Gerenciar Pedidos</h1>
-          <p className="subtitle">Acompanhe e atualize o status dos pedidos</p>
+          <div className="page-header-content">
+            <h1>Gerenciar Pedidos</h1>
+            <p className="subtitle">Acompanhe e atualize o status dos pedidos</p>
+          </div>
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={loadOrders}>
+              🔄 Atualizar
+            </button>
+          </div>
         </div>
 
         {/* Estatísticas */}
         <div className="stats-grid">
-          <div className="stat-card">
+          <div className={`stat-card ${filter === 'all' ? 'highlight' : ''}`}>
             <span className="stat-value">{stats.total}</span>
             <span className="stat-label">Total de Pedidos</span>
           </div>
-          <div className="stat-card highlight">
+          <div className={`stat-card ${filter === 'Pendente' ? 'highlight' : ''}`}>
             <span className="stat-value">{stats.pendente}</span>
             <span className="stat-label">Pendentes</span>
           </div>
-          <div className="stat-card">
+          <div className={`stat-card ${filter === 'Em Preparo' ? 'highlight' : ''}`}>
             <span className="stat-value">{stats.em_preparo}</span>
             <span className="stat-label">Em Preparo</span>
           </div>
-          <div className="stat-card">
+          <div className={`stat-card ${filter === 'Pronto' ? 'highlight' : ''}`}>
             <span className="stat-value">{stats.pronto}</span>
             <span className="stat-label">Prontos</span>
           </div>
-          <div className="stat-card">
+          <div className={`stat-card ${filter === 'A Caminho' ? 'highlight' : ''}`}>
             <span className="stat-value">{stats.em_entrega}</span>
             <span className="stat-label">Em Entrega</span>
           </div>
@@ -211,26 +211,32 @@ function AdminOrders() {
             Ativos
           </button>
           <button
-            className={`filter-btn ${filter === 'pendente' ? 'active' : ''}`}
-            onClick={() => setFilter('pendente')}
+            className={`filter-btn ${filter === 'Pendente' ? 'active' : ''}`}
+            onClick={() => setFilter('Pendente')}
           >
             Pendentes
           </button>
           <button
-            className={`filter-btn ${filter === 'em_preparo' ? 'active' : ''}`}
-            onClick={() => setFilter('em_preparo')}
+            className={`filter-btn ${filter === 'Em Preparo' ? 'active' : ''}`}
+            onClick={() => setFilter('Em Preparo')}
           >
             Em Preparo
           </button>
           <button
-            className={`filter-btn ${filter === 'pronto' ? 'active' : ''}`}
-            onClick={() => setFilter('pronto')}
+            className={`filter-btn ${filter === 'Pronto' ? 'active' : ''}`}
+            onClick={() => setFilter('Pronto')}
           >
             Prontos
           </button>
           <button
-            className={`filter-btn ${filter === 'entregue' ? 'active' : ''}`}
-            onClick={() => setFilter('entregue')}
+            className={`filter-btn ${filter === 'A Caminho' ? 'active' : ''}`}
+            onClick={() => setFilter('A Caminho')}
+          >
+            Em Entrega
+          </button>
+          <button
+            className={`filter-btn ${filter === 'Entregue' ? 'active' : ''}`}
+            onClick={() => setFilter('Entregue')}
           >
             Entregues
           </button>
@@ -265,15 +271,38 @@ function AdminOrders() {
                   </div>
 
                   <div className="order-items">
-                    <strong>Itens:</strong>
-                    <ul>
+                    <strong>Itens do Pedido:</strong>
+                    <div className="items-list-detailed">
                       {order.itens?.map((item, index) => (
-                        <li key={index}>
-                          {item.quantidade}x {item.nome_item}
-                        </li>
+                        <div key={index} className="item-row">
+                          <span className="item-qty">{item.quantidade}x</span>
+                          <div className="item-details">
+                            <span className="item-name">{item.nome_item || item.nome}</span>
+                            {item.observacao && <span className="item-note">Obs: {item.observacao}</span>}
+                          </div>
+                          <span className="item-price">
+                            R$ {Number(item.preco_unitario_gravado || item.preco || 0).toFixed(2)}
+                          </span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
+
+                  {order.avaliacao && (
+                    <div className="order-review">
+                      <strong>Avaliação do Cliente:</strong>
+                      <div className="review-content">
+                        <div className="review-stars">
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i} className={`star ${i < order.avaliacao.nota ? 'filled' : ''}`}>★</span>
+                          ))}
+                        </div>
+                        {order.avaliacao.comentario && (
+                          <p className="review-comment">"{order.avaliacao.comentario}"</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="order-address">
                     <strong>Endereço:</strong>
@@ -308,7 +337,7 @@ function AdminOrders() {
                         updateOrderStatus(order.id_pedido, getNextStatus(order.status))
                       }
                     >
-                      {getNextStatus(order.status) === 'em_entrega' 
+                      {getNextStatus(order.status) === 'A Caminho' 
                         ? '🚴 Associar Entregador e Enviar'
                         : `Marcar como "${getNextStatusLabel(order.status)}"`
                       }
@@ -344,7 +373,7 @@ function AdminOrders() {
 
                 <div className="deliverer-list">
                   {deliverers
-                    .filter(d => d.status_disponibilidade === 'Online')
+                    .filter(d => d.status_disponibilidade === 'Disponivel')
                     .map(deliverer => (
                       <label 
                         key={deliverer.id_entregador}
@@ -360,15 +389,15 @@ function AdminOrders() {
                         <div className="deliverer-info">
                           <strong>{deliverer.nome}</strong>
                           <small>📱 {deliverer.telefone}</small>
-                          <span className="status-badge status-online">Online</span>
+                          <span className="status-badge status-online">Disponível</span>
                         </div>
                       </label>
                     ))}
                 </div>
 
-                {deliverers.filter(d => d.status_disponibilidade === 'Online').length === 0 && (
+                {deliverers.filter(d => d.status_disponibilidade === 'Disponivel').length === 0 && (
                   <div className="no-deliverers">
-                    <p>Nenhum entregador online disponível</p>
+                    <p>Nenhum entregador disponível</p>
                     <button 
                       className="btn-secondary"
                       onClick={() => navigate('/admin/deliverers')}

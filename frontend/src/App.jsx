@@ -20,6 +20,7 @@ import AdminRestaurant from './pages/AdminRestaurant';
 import AdminMenu from './pages/AdminMenu';
 import AdminOrders from './pages/AdminOrders';
 import AdminDeliverers from './pages/AdminDeliverers';
+import DriverOrders from './pages/DriverOrders';
 
 function App() {
   return (
@@ -122,6 +123,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <AdminDeliverers />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/driver/orders" 
+                    element={
+                      <ProtectedRoute>
+                        <DriverOrders />
                       </ProtectedRoute>
                     } 
                   />
