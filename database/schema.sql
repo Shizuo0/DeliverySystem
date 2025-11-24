@@ -8,7 +8,7 @@ CREATE TABLE Clientes (
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     telefone VARCHAR(20) NOT NULL,
-    cpf VARCHAR(14) NULL,
+    cpf VARCHAR(14) NOT NULL UNIQUE,
     data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE Restaurantes (
     senha_admin VARCHAR(255) NOT NULL,
     tipo_cozinha VARCHAR(100) NULL,
     telefone VARCHAR(20) NULL,
-    cnpj VARCHAR(18) NULL,
+    cnpj VARCHAR(18) NOT NULL UNIQUE,
     descricao TEXT NULL,
     tempo_entrega_estimado INT NULL,
     taxa_entrega DECIMAL(10,2) DEFAULT 0.00,

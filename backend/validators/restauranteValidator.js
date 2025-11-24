@@ -27,8 +27,8 @@ const registerRestauranteValidation = [
     .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos'),
 
   body('cnpj')
-    .optional()
     .trim()
+    .notEmpty().withMessage('CNPJ é obrigatório')
     .matches(/^\d{14}$/).withMessage('CNPJ deve conter 14 dígitos numéricos')
 ];
 

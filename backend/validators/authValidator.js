@@ -22,8 +22,8 @@ const registerValidation = [
     .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos'),
 
   body('cpf')
-    .optional()
     .trim()
+    .notEmpty().withMessage('CPF é obrigatório')
     .matches(/^\d{11}$/).withMessage('CPF deve conter 11 dígitos numéricos')
 ];
 
