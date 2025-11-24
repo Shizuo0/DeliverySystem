@@ -1,76 +1,88 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { getClientOrders } from '../services/orderService';
+import { Link } from 'react-router-dom';
 import Loading from '../components/Loading';
+import { useToast } from '../context/ToastContext';
+import api from '../services/api';
 import './Orders.css';
 
 function Orders() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-
-  useEffect(() => {
-    if (location.state?.message) {
-      setSuccessMessage(location.state.message);
-      setTimeout(() => setSuccessMessage(''), 5000);
-      // Limpar o state da navegação
-      window.history.replaceState({}, document.title);
-    }
-    fetchOrders();
-  }, []);
+  const toast = useToast();
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
-      const data = await getClientOrders();
-      setOrders(data);
+      const response = await api.get('/pedidos/cliente');
+      setOrders(response.data);
     } catch (err) {
-      setError('Erro ao carregar pedidos');
-      console.error(err);
+      setError('Erro ao carregar pedidos.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusInfo = (status) => {
-    const statusMap = {
-      pendente: { label: 'Pendente', color: '#FFA726', icon: '⏳' },
-      confirmado: { label: 'Confirmado', color: '#42A5F5', icon: '✓' },
-      preparando: { label: 'Preparando', color: '#7E57C2', icon: '👨‍🍳' },
-      pronto: { label: 'Pronto', color: '#66BB6A', icon: '✓✓' },
-      saiu_entrega: { label: 'Saiu para Entrega', color: '#29B6F6', icon: '🚚' },
-      entregue: { label: 'Entregue', color: '#26A69A', icon: '✓✓✓' },
-      cancelado: { label: 'Cancelado', color: '#EF5350', icon: '✕' }
-    };
-    return statusMap[status] || { label: status, color: '#9E9E9E', icon: '?' };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) {
+      return;
+    }
+
+    try {
+      await api.put(`/pedidos/cliente/${orderId}/cancelar`);
+      toast.success('Pedido cancelado com sucesso');
+      fetchOrders();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao cancelar pedido');
+    }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const dateOnly = date.toDateString();
-    const todayOnly = today.toDateString();
-    const yesterdayOnly = yesterday.toDateString();
-
-    const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    if (dateOnly === todayOnly) {
-      return `Hoje às ${time}`;
-    } else if (dateOnly === yesterdayOnly) {
-      return `Ontem às ${time}`;
-    } else {
-      return date.toLocaleDateString('pt-BR', { 
-        day: '2-digit', 
-        month: '2-digit',
-        year: 'numeric'
-      }) + ` às ${time}`;
+  const handleConfirmDelivery = async (orderId) => {
+    if (!window.confirm('Confirma que recebeu o pedido?')) {
+      return;
     }
+
+    try {
+      await api.put(`/pedidos/cliente/${orderId}/entregue`);
+      toast.success('Entrega confirmada com sucesso');
+      fetchOrders();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao confirmar entrega');
+    }
+  };
+
+  const normalizeStatus = (status) => {
+    if (!status) return '';
+    const lower = status.toLowerCase();
+    if (lower === 'em preparo') return 'em_preparo';
+    if (lower === 'a caminho') return 'em_entrega';
+    if (lower === 'aguardando confirmação') return 'aguardando_confirmacao';
+    return lower;
+  };
+
+  const statusClassMap = {
+    pendente: 'status-pending',
+    confirmado: 'status-confirmed',
+    em_preparo: 'status-preparing',
+    pronto: 'status-ready',
+    em_entrega: 'status-delivering',
+    aguardando_confirmacao: 'status-waiting-confirmation',
+    entregue: 'status-delivered',
+    cancelado: 'status-cancelled'
+  };
+
+  const statusLabelMap = {
+    pendente: 'Pendente',
+    confirmado: 'Confirmado',
+    em_preparo: 'Em preparo',
+    pronto: 'Pronto',
+    em_entrega: 'Em entrega',
+    aguardando_confirmacao: 'Aguardando Confirmação',
+    entregue: 'Entregue',
+    cancelado: 'Cancelado'
   };
 
   if (loading) {
@@ -78,88 +90,88 @@ function Orders() {
   }
 
   return (
-    <div className="orders-container">
-      <div className="orders-header">
-        <h1>Meus Pedidos</h1>
-        <p>Acompanhe o status dos seus pedidos</p>
-      </div>
+    <div className="orders-page">
+      <div className="orders-container">
+        <header className="orders-header">
+          <h1>Histórico de pedidos</h1>
+          <p>Visualize o status em tempo real e avalie seus pedidos entregues diretamente por aqui.</p>
+        </header>
 
-      {successMessage && (
-        <div className="success-message">
-          {successMessage}
-        </div>
-      )}
+        {error && <div className="error">{error}</div>}
 
-      {error && (
-        <div className="error-message">{error}</div>
-      )}
+        {orders.length === 0 ? (
+          <div className="no-orders">
+            <p>Você ainda não fez nenhum pedido.</p>
+            <Link to="/" className="btn-primary">Conhecer restaurantes</Link>
+          </div>
+        ) : (
+          <div className="orders-list">
+            {orders.map((order) => {
+              const statusKey = normalizeStatus(order.status);
+              const total = Number(order.total ?? order.valor_total ?? 0);
+              const canReview = statusKey === 'entregue' && !order.avaliacao;
+              const canCancel = statusKey === 'pendente';
+              // Mostrar botão de confirmar entrega apenas quando estiver "A Caminho" ou "Aguardando Confirmação"
+              const canConfirmDelivery = statusKey === 'em_entrega' || statusKey === 'aguardando_confirmacao';
 
-      {orders.length === 0 ? (
-        <div className="empty-orders">
-          <div className="empty-icon">🛒</div>
-          <h2>Nenhum pedido ainda</h2>
-          <p>Quando você fizer um pedido, ele aparecerá aqui</p>
-          <button 
-            className="btn-primary"
-            onClick={() => navigate('/restaurants')}
-          >
-            Ver Restaurantes
-          </button>
-        </div>
-      ) : (
-        <div className="orders-list">
-          {orders.map(order => {
-            const statusInfo = getStatusInfo(order.status);
-            return (
-              <div 
-                key={order.id} 
-                className="order-card"
-                onClick={() => navigate(`/orders/${order.id}`)}
-              >
-                <div className="order-header">
-                  <div className="order-restaurant">
-                    <h3>{order.restaurante_nome}</h3>
-                    <span className="order-date">
-                      {formatDate(order.data_pedido)}
+              return (
+                <article key={order.id_pedido || order.id} className="order-card">
+                  <div className="order-card-header">
+                    <div>
+                      <p className="order-number">Pedido #{order.id_pedido || order.id}</p>
+                      <p className="order-restaurant">{order.restaurante?.nome || 'Restaurante'}</p>
+                    </div>
+                    <span className={`order-status ${statusClassMap[statusKey] || ''}`}>
+                      {statusLabelMap[statusKey] || order.status}
                     </span>
                   </div>
-                  <div 
-                    className="order-status-badge"
-                    style={{ backgroundColor: statusInfo.color }}
-                  >
-                    <span>{statusInfo.icon}</span>
-                    <span>{statusInfo.label}</span>
-                  </div>
-                </div>
 
-                <div className="order-items-summary">
-                  {order.itens && order.itens.length > 0 && (
-                    <p>
-                      {order.itens.length} {order.itens.length === 1 ? 'item' : 'itens'}
+                  <div className="order-card-body">
+                    <p className="order-date">
+                      {order.data_pedido
+                        ? new Date(order.data_pedido).toLocaleString('pt-BR')
+                        : 'Data não informada'}
                     </p>
-                  )}
-                </div>
+                    <p className="order-total">Total: R$ {total.toFixed(2)}</p>
+                    <div className="order-actions">
+                      <Link to={`/orders/${order.id_pedido || order.id}`} className="btn-secondary">
+                        Ver detalhes
+                      </Link>
+                      
+                      {canCancel && (
+                        <button 
+                          className="btn-danger-outline"
+                          onClick={() => handleCancel(order.id_pedido || order.id)}
+                        >
+                          Cancelar
+                        </button>
+                      )}
 
-                <div className="order-footer">
-                  <div className="order-total">
-                    <span>Total:</span>
-                    <strong>R$ {parseFloat(order.valor_total).toFixed(2)}</strong>
-                  </div>
-                  <div className="order-payment">
-                    <span>
-                      {order.forma_pagamento === 'dinheiro' && '💵 Dinheiro'}
-                      {order.forma_pagamento === 'cartao' && '💳 Cartão'}
-                      {order.forma_pagamento === 'pix' && '🔲 PIX'}
-                    </span>
-                  </div>
-                </div>
+                      {canConfirmDelivery && (
+                        <button 
+                          className="btn-success"
+                          onClick={() => handleConfirmDelivery(order.id_pedido || order.id)}
+                        >
+                          Confirmar Entrega
+                        </button>
+                      )}
 
-                <div className="order-arrow">→</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                      {canReview && (
+                        <Link
+                          to={`/orders/${order.id_pedido || order.id}/review`}
+                          className="btn-primary"
+                        >
+                          Avaliar pedido
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

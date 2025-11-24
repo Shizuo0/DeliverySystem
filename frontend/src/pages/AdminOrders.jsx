@@ -1,238 +1,435 @@
 import { useState, useEffect } from 'react';
-import { getRestaurantOrders, updateOrderStatus } from '../services/orderService';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import api from '../services/api';
 import Loading from '../components/Loading';
 import './AdminOrders.css';
 
 function AdminOrders() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const toast = useToast();
+
   const [orders, setOrders] = useState([]);
+  const [deliverers, setDeliverers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [filter, setFilter] = useState('active'); // active, all
-  const [updatingOrder, setUpdatingOrder] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [showDelivererModal, setShowDelivererModal] = useState(null);
+  const [selectedDeliverer, setSelectedDeliverer] = useState('');
 
   useEffect(() => {
-    fetchOrders();
+    if (user?.tipo !== 'restaurante') {
+      navigate('/');
+      return;
+    }
+
+    loadOrders();
+    loadDeliverers();
     
-    // Poll para atualização em tempo real a cada 30 segundos
-    const interval = setInterval(fetchOrders, 30000);
+    // Atualizar a cada 10 segundos
+    const interval = setInterval(loadOrders, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchOrders = async () => {
+  const loadOrders = async () => {
     try {
-      const data = await getRestaurantOrders();
-      setOrders(data);
-      setError('');
-    } catch (err) {
-      setError('Erro ao carregar pedidos');
-      console.error(err);
+      const response = await api.get('/pedidos/restaurante');
+      setOrders(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+      toast.error('Erro ao carregar pedidos');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  const loadDeliverers = async () => {
     try {
-      setUpdatingOrder(orderId);
-      await updateOrderStatus(orderId, newStatus);
-      
-      // Atualizar localmente
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-    } catch (err) {
-      setError('Erro ao atualizar status do pedido');
-      console.error(err);
-    } finally {
-      setUpdatingOrder(null);
+      const response = await api.get('/entregadores');
+      setDeliverers(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar entregadores:', error);
     }
   };
 
-  const getStatusInfo = (status) => {
+  const updateOrderStatus = async (orderId, newStatus) => {
+    // Se o próximo status for "A Caminho", precisa associar entregador
+    if (newStatus === 'A Caminho') {
+      const onlineDeliverers = deliverers.filter(d => d.status_disponibilidade === 'Disponivel');
+      
+      if (onlineDeliverers.length === 0) {
+        toast.warning('Não há entregadores disponíveis. Cadastre ou coloque um entregador como disponível.');
+        return;
+      }
+
+      setShowDelivererModal(orderId);
+      return;
+    }
+
+    try {
+      await api.put(`/pedidos/restaurante/${orderId}/status`, { status: newStatus });
+      toast.success('Status atualizado com sucesso');
+      loadOrders();
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const handleAssignDeliverer = async () => {
+    if (!selectedDeliverer) {
+      toast.warning('Selecione um entregador');
+      return;
+    }
+
+    try {
+      // Atualizar o pedido com o entregador e status
+      await api.put(`/pedidos/restaurante/${showDelivererModal}/entregador`, {
+        id_entregador: parseInt(selectedDeliverer)
+      });
+
+      await api.put(`/pedidos/restaurante/${showDelivererModal}/status`, { status: 'A Caminho' });
+      
+      toast.success('Entregador associado e pedido enviado para entrega');
+      setShowDelivererModal(null);
+      setSelectedDeliverer('');
+      loadOrders();
+      loadDeliverers();
+    } catch (error) {
+      console.error('Erro ao associar entregador:', error);
+      toast.error('Erro ao associar entregador');
+    }
+  };
+
+  const getStatusClass = (status) => {
     const statusMap = {
-      pendente: { label: 'Pendente', color: '#FFA726', icon: '⏳' },
-      confirmado: { label: 'Confirmado', color: '#42A5F5', icon: '✓' },
-      preparando: { label: 'Preparando', color: '#7E57C2', icon: '👨‍🍳' },
-      pronto: { label: 'Pronto', color: '#66BB6A', icon: '✓✓' },
-      saiu_entrega: { label: 'Saiu para Entrega', color: '#29B6F6', icon: '🚚' },
-      entregue: { label: 'Entregue', color: '#26A69A', icon: '✓✓✓' },
-      cancelado: { label: 'Cancelado', color: '#EF5350', icon: '✕' }
+      'Pendente': 'status-pending',
+      'Confirmado': 'status-confirmed',
+      'Em Preparo': 'status-preparing',
+      'Pronto': 'status-ready',
+      'A Caminho': 'status-delivering',
+      'Aguardando Confirmação': 'status-waiting-confirmation',
+      'Entregue': 'status-delivered',
+      'Cancelado': 'status-cancelled'
     };
-    return statusMap[status] || { label: status, color: '#9E9E9E', icon: '?' };
+    return statusMap[status] || '';
+  };
+
+  const getStatusLabel = (status) => {
+    return status;
   };
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
-      pendente: 'confirmado',
-      confirmado: 'preparando',
-      preparando: 'pronto',
-      pronto: 'saiu_entrega'
+      'Pendente': 'Confirmado',
+      'Confirmado': 'Em Preparo',
+      'Em Preparo': 'Pronto',
+      'Pronto': 'A Caminho',
+      'A Caminho': 'Entregue', // Restaurant can still force complete if needed, or we can remove this
+      'Aguardando Confirmação': 'Entregue'
     };
     return statusFlow[currentStatus];
   };
 
-  const getStatusLabel = (status) => {
-    const labels = {
-      confirmado: 'Confirmar',
-      preparando: 'Iniciar Preparo',
-      pronto: 'Marcar como Pronto',
-      saiu_entrega: 'Saiu para Entrega'
-    };
-    return labels[status] || 'Avançar';
+  const getNextStatusLabel = (currentStatus) => {
+    const nextStatus = getNextStatus(currentStatus);
+    return nextStatus ? getStatusLabel(nextStatus) : null;
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order) => {
+    if (filter === 'all') return true;
     if (filter === 'active') {
-      return !['entregue', 'cancelado'].includes(order.status);
+      return !['Entregue', 'Cancelado'].includes(order.status);
     }
-    return true;
+    return order.status === filter;
   });
 
-  const activeOrders = orders.filter(o => !['entregue', 'cancelado'].includes(o.status));
-  const completedOrders = orders.filter(o => ['entregue', 'cancelado'].includes(o.status));
+  const stats = {
+    total: orders.length,
+    pendente: orders.filter((o) => o.status === 'Pendente').length,
+    em_preparo: orders.filter((o) => o.status === 'Em Preparo').length,
+    pronto: orders.filter((o) => o.status === 'Pronto').length,
+    em_entrega: orders.filter((o) => o.status === 'A Caminho').length
+  };
 
   if (loading) {
-    return <Loading message="Carregando pedidos..." />;
+    return <Loading />;
   }
 
   return (
-    <div className="admin-orders-container">
-      <div className="admin-orders-header">
-        <div>
-          <h1>Gerenciar Pedidos</h1>
-          <p>Acompanhe e atualize o status dos pedidos</p>
-        </div>
-        <div className="orders-stats">
-          <div className="stat-card active">
-            <span className="stat-number">{activeOrders.length}</span>
-            <span className="stat-label">Ativos</span>
+    <div className="admin-orders-page">
+      <div className="admin-orders-container">
+        <div className="page-header">
+          <div className="page-header-content">
+            <h1>Gerenciar Pedidos</h1>
+            <p className="subtitle">Acompanhe e atualize o status dos pedidos</p>
           </div>
-          <div className="stat-card">
-            <span className="stat-number">{completedOrders.length}</span>
-            <span className="stat-label">Finalizados</span>
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={loadOrders}>
+              🔄 Atualizar
+            </button>
           </div>
         </div>
-      </div>
 
-      {error && (
-        <div className="error-message">{error}</div>
-      )}
-
-      <div className="filter-tabs">
-        <button
-          className={`filter-tab ${filter === 'active' ? 'active' : ''}`}
-          onClick={() => setFilter('active')}
-        >
-          Pedidos Ativos ({activeOrders.length})
-        </button>
-        <button
-          className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          Todos os Pedidos ({orders.length})
-        </button>
-      </div>
-
-      {filteredOrders.length === 0 ? (
-        <div className="empty-orders">
-          <div className="empty-icon">📋</div>
-          <h2>Nenhum pedido</h2>
-          <p>
-            {filter === 'active' 
-              ? 'Não há pedidos ativos no momento' 
-              : 'Não há pedidos registrados'}
-          </p>
+        {/* Estatísticas */}
+        <div className="stats-grid">
+          <div className={`stat-card ${filter === 'all' ? 'highlight' : ''}`}>
+            <span className="stat-value">{stats.total}</span>
+            <span className="stat-label">Total de Pedidos</span>
+          </div>
+          <div className={`stat-card ${filter === 'Pendente' ? 'highlight' : ''}`}>
+            <span className="stat-value">{stats.pendente}</span>
+            <span className="stat-label">Pendentes</span>
+          </div>
+          <div className={`stat-card ${filter === 'Em Preparo' ? 'highlight' : ''}`}>
+            <span className="stat-value">{stats.em_preparo}</span>
+            <span className="stat-label">Em Preparo</span>
+          </div>
+          <div className={`stat-card ${filter === 'Pronto' ? 'highlight' : ''}`}>
+            <span className="stat-value">{stats.pronto}</span>
+            <span className="stat-label">Prontos</span>
+          </div>
+          <div className={`stat-card ${filter === 'A Caminho' ? 'highlight' : ''}`}>
+            <span className="stat-value">{stats.em_entrega}</span>
+            <span className="stat-label">Em Entrega</span>
+          </div>
         </div>
-      ) : (
-        <div className="admin-orders-grid">
-          {filteredOrders.map(order => {
-            const statusInfo = getStatusInfo(order.status);
-            const nextStatus = getNextStatus(order.status);
-            const isUpdating = updatingOrder === order.id;
 
-            return (
-              <div key={order.id} className="admin-order-card">
+        {/* Filtros */}
+        <div className="filters">
+          <button
+            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            Todos
+          </button>
+          <button
+            className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
+            onClick={() => setFilter('active')}
+          >
+            Ativos
+          </button>
+          <button
+            className={`filter-btn ${filter === 'Pendente' ? 'active' : ''}`}
+            onClick={() => setFilter('Pendente')}
+          >
+            Pendentes
+          </button>
+          <button
+            className={`filter-btn ${filter === 'Em Preparo' ? 'active' : ''}`}
+            onClick={() => setFilter('Em Preparo')}
+          >
+            Em Preparo
+          </button>
+          <button
+            className={`filter-btn ${filter === 'Pronto' ? 'active' : ''}`}
+            onClick={() => setFilter('Pronto')}
+          >
+            Prontos
+          </button>
+          <button
+            className={`filter-btn ${filter === 'A Caminho' ? 'active' : ''}`}
+            onClick={() => setFilter('A Caminho')}
+          >
+            Em Entrega
+          </button>
+          <button
+            className={`filter-btn ${filter === 'Entregue' ? 'active' : ''}`}
+            onClick={() => setFilter('Entregue')}
+          >
+            Entregues
+          </button>
+        </div>
+
+        {/* Lista de Pedidos */}
+        <div className="orders-list">
+          {filteredOrders.length === 0 ? (
+            <div className="no-orders">
+              <p>Nenhum pedido encontrado</p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => (
+              <div key={order.id_pedido} className="order-card">
                 <div className="order-card-header">
-                  <div>
-                    <h3>Pedido #{order.id}</h3>
-                    <span className="order-time">{formatDate(order.data_pedido)}</span>
+                  <div className="order-id">
+                    <strong>Pedido #{order.id_pedido}</strong>
+                    <span className="order-time">
+                      {new Date(order.data_hora).toLocaleString('pt-BR')}
+                    </span>
                   </div>
-                  <div 
-                    className="status-badge"
-                    style={{ backgroundColor: statusInfo.color }}
-                  >
-                    <span>{statusInfo.icon}</span>
-                    <span>{statusInfo.label}</span>
-                  </div>
-                </div>
-
-                <div className="order-customer">
-                  <strong>Cliente:</strong> {order.cliente_nome}
-                </div>
-
-                <div className="order-items-list">
-                  <strong>Itens:</strong>
-                  {order.itens && order.itens.map((item, index) => (
-                    <div key={index} className="order-item-row">
-                      <span>{item.quantidade}x {item.item_nome}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="order-address">
-                  <strong>Endereço:</strong>
-                  <p>
-                    {order.endereco_logradouro}, {order.endereco_numero}
-                    {order.endereco_complemento && ` - ${order.endereco_complemento}`}
-                  </p>
-                  <p>{order.endereco_bairro}</p>
-                </div>
-
-                <div className="order-payment">
-                  <strong>Pagamento:</strong>
-                  <span>
-                    {order.forma_pagamento === 'dinheiro' && '💵 Dinheiro'}
-                    {order.forma_pagamento === 'cartao' && '💳 Cartão'}
-                    {order.forma_pagamento === 'pix' && '🔲 PIX'}
+                  <span className={`status-badge ${getStatusClass(order.status)}`}>
+                    {getStatusLabel(order.status)}
                   </span>
                 </div>
 
-                <div className="order-total">
-                  <strong>Total:</strong>
-                  <span className="total-value">R$ {parseFloat(order.valor_total).toFixed(2)}</span>
+                <div className="order-card-body">
+                  <div className="customer-info">
+                    <strong>Cliente:</strong> {order.cliente?.nome}
+                    <br />
+                    <strong>Telefone:</strong> {order.cliente?.telefone}
+                  </div>
+
+                  <div className="order-items">
+                    <strong>Itens do Pedido:</strong>
+                    <div className="items-list-detailed">
+                      {order.itens?.map((item, index) => (
+                        <div key={index} className="item-row">
+                          <span className="item-qty">{item.quantidade}x</span>
+                          <div className="item-details">
+                            <span className="item-name">{item.nome_item || item.nome}</span>
+                            {item.observacao && <span className="item-note">Obs: {item.observacao}</span>}
+                          </div>
+                          <span className="item-price">
+                            R$ {Number(item.preco_unitario_gravado || item.preco || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {order.avaliacao && (
+                    <div className="order-review">
+                      <strong>Avaliação do Cliente:</strong>
+                      <div className="review-content">
+                        <div className="review-stars">
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i} className={`star ${i < order.avaliacao.nota ? 'filled' : ''}`}>★</span>
+                          ))}
+                        </div>
+                        {order.avaliacao.comentario && (
+                          <p className="review-comment">"{order.avaliacao.comentario}"</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="order-address">
+                    <strong>Endereço:</strong>
+                    <p>
+                      {order.endereco_entrega?.logradouro}, {order.endereco_entrega?.numero}
+                      {order.endereco_entrega?.complemento &&
+                        ` - ${order.endereco_entrega.complemento}`}
+                    </p>
+                    <p>
+                      {order.endereco_entrega?.bairro}, {order.endereco_entrega?.cidade}
+                    </p>
+                  </div>
+
+                  <div className="order-payment">
+                    <strong>Pagamento:</strong>{' '}
+                    {{
+                      'dinheiro': 'Dinheiro',
+                      'cartao_credito': 'Cartão de Crédito',
+                      'cartao_debito': 'Cartão de Débito',
+                      'pix': 'PIX'
+                    }[order.metodo_pagamento] || order.metodo_pagamento}
+                    {' | '}
+                    <strong>Total: R$ {Number(order.valor_total || order.total).toFixed(2)}</strong>
+                  </div>
                 </div>
 
-                {nextStatus && (
-                  <button
-                    className="btn-update-status"
-                    onClick={() => handleUpdateStatus(order.id, nextStatus)}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? 'Atualizando...' : getStatusLabel(nextStatus)}
-                  </button>
-                )}
-
-                {order.status === 'pendente' && (
-                  <button
-                    className="btn-cancel"
-                    onClick={() => handleUpdateStatus(order.id, 'cancelado')}
-                    disabled={isUpdating}
-                  >
-                    Cancelar Pedido
-                  </button>
+                {getNextStatus(order.status) && (
+                  <div className="order-card-footer">
+                    <button
+                      className="btn-primary btn-update-status"
+                      onClick={() =>
+                        updateOrderStatus(order.id_pedido, getNextStatus(order.status))
+                      }
+                    >
+                      {getNextStatus(order.status) === 'A Caminho' 
+                        ? '🚴 Associar Entregador e Enviar'
+                        : `Marcar como "${getNextStatusLabel(order.status)}"`
+                      }
+                    </button>
+                  </div>
                 )}
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
-      )}
+
+        {/* Modal de Seleção de Entregador */}
+        {showDelivererModal && (
+          <div className="deliverer-modal-overlay">
+            <div className="deliverer-modal">
+              <div className="modal-header">
+                <h3>🚴 Selecionar Entregador</h3>
+                <button 
+                  className="close-btn" 
+                  onClick={() => {
+                    setShowDelivererModal(null);
+                    setSelectedDeliverer('');
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <p className="modal-description">
+                  Escolha um entregador disponível para este pedido:
+                </p>
+
+                <div className="deliverer-list">
+                  {deliverers
+                    .filter(d => d.status_disponibilidade === 'Disponivel')
+                    .map(deliverer => (
+                      <label 
+                        key={deliverer.id_entregador}
+                        className={`deliverer-option ${selectedDeliverer == deliverer.id_entregador ? 'selected' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="deliverer"
+                          value={deliverer.id_entregador}
+                          checked={selectedDeliverer == deliverer.id_entregador}
+                          onChange={(e) => setSelectedDeliverer(e.target.value)}
+                        />
+                        <div className="deliverer-info">
+                          <strong>{deliverer.nome}</strong>
+                          <small>📱 {deliverer.telefone}</small>
+                          <span className="status-badge status-online">Disponível</span>
+                        </div>
+                      </label>
+                    ))}
+                </div>
+
+                {deliverers.filter(d => d.status_disponibilidade === 'Disponivel').length === 0 && (
+                  <div className="no-deliverers">
+                    <p>Nenhum entregador disponível</p>
+                    <button 
+                      className="btn-secondary"
+                      onClick={() => navigate('/admin/deliverers')}
+                    >
+                      Gerenciar Entregadores
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  className="btn-primary"
+                  onClick={handleAssignDeliverer}
+                  disabled={!selectedDeliverer}
+                >
+                  Confirmar e Enviar para Entrega
+                </button>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowDelivererModal(null);
+                    setSelectedDeliverer('');
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import Cart from './Cart';
+import UserMenu from './UserMenu';
 import './Navbar.css';
 
 function Navbar() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getItemCount } = useCart();
-  const location = useLocation();
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { getCartCount } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cartCount = getCartCount();
   const isRestaurantOwner = user?.tipo === 'restaurante';
@@ -26,92 +25,89 @@ function Navbar() {
     { label: '📦 Pedidos', icon: '📦', to: '/orders' },
   ];
 
-  const isRestaurantOwner = user && user.tipo === 'restaurante';
-  const isClient = user && user.tipo === 'cliente';
-  const cartItemCount = getItemCount();
+  const ownerLinks = [
+    { label: '🏪 Meu Restaurante', icon: '🏪', to: '/admin/restaurant' },
+    { label: '📋 Cardápio', icon: '📋', to: '/admin/menu' },
+    { label: '📦 Pedidos', icon: '📦', to: '/admin/orders' },
+    { label: '🛵 Entregadores', icon: '🛵', to: '/admin/deliverers' },
+  ];
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
 
   return (
-    <>
-      <nav className="navbar">
+    <nav className="navbar">
+      <div className="nav-container">
         <div className="nav-brand">
-          <Link to="/">Delivery System</Link>
+          <NavLink to="/" onClick={closeMobileMenu}>
+            <span className="brand-icon">🍕</span>
+            <span className="brand-text">Delivery System</span>
+          </NavLink>
         </div>
-        <ul className="nav-links">
-          <li>
-            <Link to="/" className={isActive('/')}>Home</Link>
-          </li>
-          
-          {/* Menu para clientes ou visitantes */}
-          {!isRestaurantOwner && (
-            <li>
-              <Link to="/restaurants" className={isActive('/restaurants')}>Restaurantes</Link>
-            </li>
-          )}
 
-          {/* Menu para restaurantes */}
-          {isRestaurantOwner && (
-            <>
-              <li>
-                <Link to="/admin/restaurant" className={isActive('/admin/restaurant')}>
-                  Meu Restaurante
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/menu" className={isActive('/admin/menu')}>
-                  Cardápio
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/orders" className={isActive('/admin/orders')}>
-                  Pedidos
-                </Link>
-              </li>
-            </>
-          )}
+        <button 
+          className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
 
-          {/* Menu para usuários logados */}
-          {user ? (
-            <>
-              {isClient && (
-                <>
-                  <li>
-                    <Link to="/orders" className={isActive('/orders')}>Pedidos</Link>
-                  </li>
-                  <li>
-                    <button 
-                      className="cart-icon-btn" 
-                      onClick={() => setIsCartOpen(true)}
-                      aria-label="Abrir carrinho"
-                    >
-                      🛒
-                      {cartItemCount > 0 && (
-                        <span className="cart-badge">{cartItemCount}</span>
-                      )}
-                    </button>
-                  </li>
-                </>
-              )}
-              <li>
-                <Link to="/profile" className={isActive('/profile')}>
-                  Perfil
-                </Link>
+        <div className={`nav-content ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <ul className="nav-links">
+            {baseLinks
+              .filter((link) => !link.hidden)
+              .map((link) => (
+                <li key={link.to}>
+                  <NavLink 
+                    to={link.to} 
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) => (isActive ? 'active' : '')}
+                    end={link.exactMatch}
+                  >
+                    <span className="nav-icon">{link.icon}</span>
+                    <span className="nav-text">{link.label.replace(/^[^\s]+ /, '')}</span>
+                  </NavLink>
+                </li>
+              ))}
+
+            {user && (isClient ? clientLinks : ownerLinks).map((link) => (
+              <li key={link.to}>
+                <NavLink 
+                  to={link.to} 
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) => (isActive ? 'active' : '')}
+                >
+                  <span className="nav-icon">{link.icon}</span>
+                  <span className="nav-text">{link.label.replace(/^[^\s]+ /, '')}</span>
+                  {link.badge ? <span className="nav-badge">{link.badge}</span> : null}
+                </NavLink>
               </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <Link to="/login" className={`nav-btn ${isActive('/login')}`}>Entrar</Link>
-              </li>
-              <li>
-                <Link to="/register" className={`nav-btn-primary ${isActive('/register')}`}>Cadastrar</Link>
-              </li>
-            </>
-          )}
-        </ul>
-      </nav>
-      
-      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-    </>
+            ))}
+          </ul>
+
+          <div className="nav-actions">
+            {!user ? (
+              <>
+                <NavLink to="/login" className="nav-btn" onClick={closeMobileMenu}>
+                  <span className="nav-icon">🔑</span>
+                  <span>Entrar</span>
+                </NavLink>
+                <NavLink to="/register" className="nav-btn-primary" onClick={closeMobileMenu}>
+                  <span className="nav-icon">✨</span>
+                  <span>Cadastrar</span>
+                </NavLink>
+              </>
+            ) : (
+              <UserMenu />
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
   );
 }
 
