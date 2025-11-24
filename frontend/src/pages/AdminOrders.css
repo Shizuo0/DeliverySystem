@@ -276,3 +276,153 @@
     padding: 1rem;
   }
 }
+
+/* Modal de Seleção de Entregador */
+.deliverer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.deliverer-modal {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--text-dark);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-light);
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--background-light);
+  color: var(--text-dark);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-description {
+  color: var(--text-light);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.deliverer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.deliverer-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deliverer-option:hover {
+  border-color: var(--primary-red);
+  background: rgba(255, 77, 77, 0.05);
+}
+
+.deliverer-option.selected {
+  border-color: var(--primary-red);
+  background: rgba(255, 77, 77, 0.1);
+}
+
+.deliverer-option input[type="radio"] {
+  cursor: pointer;
+}
+
+.deliverer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deliverer-info strong {
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+.deliverer-info small {
+  color: var(--text-light);
+  font-size: 0.85rem;
+}
+
+.no-deliverers {
+  text-align: center;
+  padding: 2rem;
+  background: var(--background-light);
+  border-radius: 8px;
+}
+
+.no-deliverers p {
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-footer button {
+  flex: 1;
+}

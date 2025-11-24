@@ -10,7 +10,7 @@ import './Checkout.css';
 function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cart, restaurantId, restaurantName, getCartTotal, clearCart } = useCart();
+  const { cart, restaurantId, restaurantName, getCartTotal, clearCart, loading: cartLoading } = useCart();
   const toast = useToast();
 
   const [addresses, setAddresses] = useState([]);
@@ -18,32 +18,46 @@ function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   useEffect(() => {
+    if (cartLoading || orderPlaced) return;
+
     if (cart.length === 0) {
+      // Only redirect if we are sure cart is empty and not loading
       toast.warning('Seu carrinho está vazio');
       navigate('/restaurants');
       return;
     }
 
-    loadAddresses();
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [addressResponse, restaurantResponse] = await Promise.all([
+          api.get('/clientes/enderecos'),
+          api.get(`/restaurantes/${restaurantId}`)
+        ]);
 
-  const loadAddresses = async () => {
-    try {
-      const response = await api.get('/clientes/enderecos');
-      setAddresses(response.data);
-      
-      if (response.data.length > 0) {
-        setSelectedAddress(response.data[0].id_endereco_cliente.toString());
+        const addressesData = addressResponse.data.data || [];
+        setAddresses(addressesData);
+        
+        if (addressesData.length > 0) {
+          setSelectedAddress(addressesData[0].id_endereco_cliente.toString());
+        }
+
+        if (restaurantResponse.data) {
+          setDeliveryFee(Number(restaurantResponse.data.taxa_entrega));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        toast.error('Erro ao carregar dados do pedido');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Erro ao carregar endereços:', error);
-      toast.error('Erro ao carregar endereços');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchData();
+  }, [cartLoading, cart.length, restaurantId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,22 +74,30 @@ function Checkout() {
 
     setSubmitting(true);
 
+    const paymentMethodMap = {
+      'dinheiro': 'Dinheiro',
+      'cartao_credito': 'Cartão de Crédito',
+      'cartao_debito': 'Cartão de Débito',
+      'pix': 'PIX'
+    };
+
     try {
       const orderData = {
         id_restaurante: restaurantId,
-        id_endereco_entrega: parseInt(selectedAddress),
-        forma_pagamento: paymentMethod,
+        id_endereco_cliente: parseInt(selectedAddress),
+        metodo_pagamento: paymentMethodMap[paymentMethod],
         itens: cart.map(item => ({
-          id_item: item.id_item,
+          id_item_cardapio: item.id_item,
           quantidade: item.quantidade
         }))
       };
 
-      const response = await api.post('/pedidos', orderData);
+      const response = await api.post('/pedidos/cliente', orderData);
       
+      setOrderPlaced(true);
       toast.success('Pedido realizado com sucesso!');
       clearCart();
-      navigate(`/orders/${response.data.id_pedido}`);
+      navigate(`/orders/${response.data.pedido.id_pedido}`);
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
       toast.error(error.response?.data?.message || 'Erro ao criar pedido');
@@ -84,11 +106,10 @@ function Checkout() {
     }
   };
 
-  if (loading) {
+  if (loading || cartLoading) {
     return <Loading />;
   }
 
-  const deliveryFee = 5.00;
   const subtotal = getCartTotal();
   const total = subtotal + deliveryFee;
 

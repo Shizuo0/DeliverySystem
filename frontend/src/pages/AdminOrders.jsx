@@ -12,8 +12,11 @@ function AdminOrders() {
   const toast = useToast();
 
   const [orders, setOrders] = useState([]);
+  const [deliverers, setDeliverers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showDelivererModal, setShowDelivererModal] = useState(null);
+  const [selectedDeliverer, setSelectedDeliverer] = useState('');
 
   useEffect(() => {
     if (user?.tipo !== 'restaurante') {
@@ -22,6 +25,7 @@ function AdminOrders() {
     }
 
     loadOrders();
+    loadDeliverers();
     
     // Atualizar a cada 30 segundos
     const interval = setInterval(loadOrders, 30000);
@@ -40,14 +44,61 @@ function AdminOrders() {
     }
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const loadDeliverers = async () => {
     try {
-      await api.put(`/pedidos/${orderId}/status`, { status: newStatus });
+      const response = await api.get('/entregadores');
+      setDeliverers(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar entregadores:', error);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    // Se o próximo status for "A Caminho" (em_entrega), precisa associar entregador
+    if (newStatus === 'em_entrega') {
+      const onlineDeliverers = deliverers.filter(d => d.status_disponibilidade === 'Online');
+      
+      if (onlineDeliverers.length === 0) {
+        toast.warning('Não há entregadores online disponíveis. Cadastre ou coloque um entregador online.');
+        return;
+      }
+
+      setShowDelivererModal(orderId);
+      return;
+    }
+
+    try {
+      await api.put(`/pedidos/restaurante/${orderId}/status`, { status: newStatus });
       toast.success('Status atualizado com sucesso');
       loadOrders();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const handleAssignDeliverer = async () => {
+    if (!selectedDeliverer) {
+      toast.warning('Selecione um entregador');
+      return;
+    }
+
+    try {
+      // Atualizar o pedido com o entregador e status
+      await api.put(`/pedidos/restaurante/${showDelivererModal}/entregador`, {
+        id_entregador: parseInt(selectedDeliverer)
+      });
+
+      await api.put(`/pedidos/restaurante/${showDelivererModal}/status`, { status: 'em_entrega' });
+      
+      toast.success('Entregador associado e pedido enviado para entrega');
+      setShowDelivererModal(null);
+      setSelectedDeliverer('');
+      loadOrders();
+      loadDeliverers();
+    } catch (error) {
+      console.error('Erro ao associar entregador:', error);
+      toast.error('Erro ao associar entregador');
     }
   };
 
@@ -238,12 +289,12 @@ function AdminOrders() {
 
                   <div className="order-payment">
                     <strong>Pagamento:</strong>{' '}
-                    {order.forma_pagamento === 'dinheiro' && 'Dinheiro'}
-                    {order.forma_pagamento === 'cartao_credito' && 'Cartão de Crédito'}
-                    {order.forma_pagamento === 'cartao_debito' && 'Cartão de Débito'}
-                    {order.forma_pagamento === 'pix' && 'PIX'}
+                    {order.metodo_pagamento === 'dinheiro' && 'Dinheiro'}
+                    {order.metodo_pagamento === 'cartao_credito' && 'Cartão de Crédito'}
+                    {order.metodo_pagamento === 'cartao_debito' && 'Cartão de Débito'}
+                    {order.metodo_pagamento === 'pix' && 'PIX'}
                     {' | '}
-                    <strong>Total: R$ {order.total.toFixed(2)}</strong>
+                    <strong>Total: R$ {Number(order.valor_total || order.total).toFixed(2)}</strong>
                   </div>
                 </div>
 
@@ -255,7 +306,10 @@ function AdminOrders() {
                         updateOrderStatus(order.id_pedido, getNextStatus(order.status))
                       }
                     >
-                      Marcar como "{getNextStatusLabel(order.status)}"
+                      {getNextStatus(order.status) === 'em_entrega' 
+                        ? '🚴 Associar Entregador e Enviar'
+                        : `Marcar como "${getNextStatusLabel(order.status)}"`
+                      }
                     </button>
                   </div>
                 )}
@@ -263,6 +317,87 @@ function AdminOrders() {
             ))
           )}
         </div>
+
+        {/* Modal de Seleção de Entregador */}
+        {showDelivererModal && (
+          <div className="deliverer-modal-overlay">
+            <div className="deliverer-modal">
+              <div className="modal-header">
+                <h3>🚴 Selecionar Entregador</h3>
+                <button 
+                  className="close-btn" 
+                  onClick={() => {
+                    setShowDelivererModal(null);
+                    setSelectedDeliverer('');
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <p className="modal-description">
+                  Escolha um entregador disponível para este pedido:
+                </p>
+
+                <div className="deliverer-list">
+                  {deliverers
+                    .filter(d => d.status_disponibilidade === 'Online')
+                    .map(deliverer => (
+                      <label 
+                        key={deliverer.id_entregador}
+                        className={`deliverer-option ${selectedDeliverer == deliverer.id_entregador ? 'selected' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="deliverer"
+                          value={deliverer.id_entregador}
+                          checked={selectedDeliverer == deliverer.id_entregador}
+                          onChange={(e) => setSelectedDeliverer(e.target.value)}
+                        />
+                        <div className="deliverer-info">
+                          <strong>{deliverer.nome}</strong>
+                          <small>📱 {deliverer.telefone}</small>
+                          <span className="status-badge status-online">Online</span>
+                        </div>
+                      </label>
+                    ))}
+                </div>
+
+                {deliverers.filter(d => d.status_disponibilidade === 'Online').length === 0 && (
+                  <div className="no-deliverers">
+                    <p>Nenhum entregador online disponível</p>
+                    <button 
+                      className="btn-secondary"
+                      onClick={() => navigate('/admin/deliverers')}
+                    >
+                      Gerenciar Entregadores
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  className="btn-primary"
+                  onClick={handleAssignDeliverer}
+                  disabled={!selectedDeliverer}
+                >
+                  Confirmar e Enviar para Entrega
+                </button>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowDelivererModal(null);
+                    setSelectedDeliverer('');
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

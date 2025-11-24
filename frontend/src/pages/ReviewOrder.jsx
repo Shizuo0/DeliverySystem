@@ -15,7 +15,6 @@ function ReviewOrder() {
   const [submitting, setSubmitting] = useState(false);
 
   const [restaurantRating, setRestaurantRating] = useState(0);
-  const [deliveryRating, setDeliveryRating] = useState(0);
   const [comment, setComment] = useState('');
 
   useEffect(() => {
@@ -24,9 +23,10 @@ function ReviewOrder() {
 
   const loadOrder = async () => {
     try {
-      const response = await api.get(`/pedidos/${id}`);
+      const response = await api.get(`/pedidos/cliente/${id}`);
       
-      if (response.data.status !== 'entregue') {
+      const status = response.data.status?.toLowerCase();
+      if (status !== 'entregue') {
         toast.warning('Você só pode avaliar pedidos entregues');
         navigate(`/orders/${id}`);
         return;
@@ -52,21 +52,16 @@ function ReviewOrder() {
     e.preventDefault();
 
     if (restaurantRating === 0) {
-      toast.warning('Por favor, avalie o restaurante');
-      return;
-    }
-
-    if (deliveryRating === 0) {
-      toast.warning('Por favor, avalie a entrega');
+      toast.warning('Por favor, avalie o pedido');
       return;
     }
 
     setSubmitting(true);
 
     try {
-      await api.post(`/pedidos/${id}/avaliacao`, {
-        nota_restaurante: restaurantRating,
-        nota_entregador: deliveryRating,
+      await api.post('/avaliacoes/cliente', {
+        id_pedido: id,
+        nota: restaurantRating,
         comentario: comment || null
       });
 
@@ -119,27 +114,16 @@ function ReviewOrder() {
           <div className="order-info">
             <h3>{order.restaurante?.nome}</h3>
             <p className="order-date">
-              Entregue em {new Date(order.atualizado_em).toLocaleDateString('pt-BR')}
+              Entregue em {order.data_hora ? new Date(order.data_hora).toLocaleDateString('pt-BR') : 'Data desconhecida'}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="review-form">
-            {/* Avaliação do Restaurante */}
+            {/* Avaliação */}
             <div className="rating-section">
-              <h2>Como foi o restaurante?</h2>
-              <p className="rating-subtitle">Avalie a qualidade da comida e do atendimento</p>
+              <h2>Como foi sua experiência?</h2>
+              <p className="rating-subtitle">Avalie a qualidade da comida e do serviço</p>
               {renderStars(restaurantRating, setRestaurantRating)}
-              <div className="rating-labels">
-                <span>Péssimo</span>
-                <span>Excelente</span>
-              </div>
-            </div>
-
-            {/* Avaliação da Entrega */}
-            <div className="rating-section">
-              <h2>Como foi a entrega?</h2>
-              <p className="rating-subtitle">Avalie a rapidez e cuidado na entrega</p>
-              {renderStars(deliveryRating, setDeliveryRating)}
               <div className="rating-labels">
                 <span>Péssimo</span>
                 <span>Excelente</span>
@@ -166,7 +150,7 @@ function ReviewOrder() {
             <button
               type="submit"
               className="btn-primary btn-submit"
-              disabled={submitting || restaurantRating === 0 || deliveryRating === 0}
+              disabled={submitting || restaurantRating === 0}
             >
               {submitting ? 'Enviando...' : 'Enviar Avaliação'}
             </button>

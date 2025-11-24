@@ -58,7 +58,20 @@ const updateRestauranteValidation = [
   body('telefone')
     .optional()
     .trim()
-    .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos')
+    .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos'),
+  
+  body('descricao')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Descrição deve ter no máximo 1000 caracteres'),
+  
+  body('tempo_entrega_estimado')
+    .optional()
+    .isInt({ min: 0 }).withMessage('Tempo de entrega deve ser um número inteiro positivo'),
+  
+  body('taxa_entrega')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Taxa de entrega deve ser um número positivo')
 ];
 
 const changePasswordRestauranteValidation = [

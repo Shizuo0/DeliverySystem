@@ -3,18 +3,20 @@ import { useToast } from './ToastContext';
 
 const CartContext = createContext();
 
-export const useCart = () => {
+function useCart() {
   const context = useContext(CartContext);
   if (!context) {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
-};
+}
 
-export const CartProvider = ({ children }) => {
+function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [restaurantId, setRestaurantId] = useState(null);
   const [restaurantName, setRestaurantName] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [loading, setLoading] = useState(true);
   const toast = useToast();
 
   // Carregar carrinho do localStorage ao iniciar
@@ -22,6 +24,7 @@ export const CartProvider = ({ children }) => {
     const savedCart = localStorage.getItem('cart');
     const savedRestaurantId = localStorage.getItem('cartRestaurantId');
     const savedRestaurantName = localStorage.getItem('cartRestaurantName');
+    const savedDeliveryFee = localStorage.getItem('cartDeliveryFee');
 
     if (savedCart) {
       try {
@@ -38,6 +41,12 @@ export const CartProvider = ({ children }) => {
     if (savedRestaurantName) {
       setRestaurantName(savedRestaurantName);
     }
+
+    if (savedDeliveryFee) {
+      setDeliveryFee(Number(savedDeliveryFee));
+    }
+    
+    setLoading(false);
   }, []);
 
   // Salvar carrinho no localStorage quando mudar
@@ -65,6 +74,14 @@ export const CartProvider = ({ children }) => {
     }
   }, [restaurantName]);
 
+  useEffect(() => {
+    if (deliveryFee) {
+      localStorage.setItem('cartDeliveryFee', deliveryFee.toString());
+    } else {
+      localStorage.removeItem('cartDeliveryFee');
+    }
+  }, [deliveryFee]);
+
   const addToCart = (item, restaurant) => {
     // Verificar se é de outro restaurante
     if (restaurantId && restaurantId !== restaurant.id) {
@@ -80,10 +97,12 @@ export const CartProvider = ({ children }) => {
       setCart([]);
       setRestaurantId(restaurant.id);
       setRestaurantName(restaurant.nome);
+      setDeliveryFee(Number(restaurant.taxa_entrega || 0));
     } else if (!restaurantId) {
       // Primeiro item do carrinho
       setRestaurantId(restaurant.id);
       setRestaurantName(restaurant.nome);
+      setDeliveryFee(Number(restaurant.taxa_entrega || 0));
     }
 
     // Verificar se o item já está no carrinho
@@ -112,6 +131,7 @@ export const CartProvider = ({ children }) => {
     if (newCart.length === 0) {
       setRestaurantId(null);
       setRestaurantName('');
+      setDeliveryFee(0);
     }
     
     toast.info('Item removido do carrinho');
@@ -135,9 +155,11 @@ export const CartProvider = ({ children }) => {
     setCart([]);
     setRestaurantId(null);
     setRestaurantName('');
+    setDeliveryFee(0);
     localStorage.removeItem('cart');
     localStorage.removeItem('cartRestaurantId');
     localStorage.removeItem('cartRestaurantName');
+    localStorage.removeItem('cartDeliveryFee');
   };
 
   const getCartTotal = () => {
@@ -154,13 +176,17 @@ export const CartProvider = ({ children }) => {
     cart,
     restaurantId,
     restaurantName,
+    deliveryFee,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     getCartTotal,
-    getCartCount
+    getCartCount,
+    loading
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-};
+}
+
+export { useCart, CartProvider };

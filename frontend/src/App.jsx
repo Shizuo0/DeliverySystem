@@ -14,10 +14,12 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import ReviewOrder from './pages/ReviewOrder';
+import Cart from './pages/Cart';
+import Reviews from './pages/Reviews';
 import AdminRestaurant from './pages/AdminRestaurant';
 import AdminMenu from './pages/AdminMenu';
 import AdminOrders from './pages/AdminOrders';
-import './App.css';
+import AdminDeliverers from './pages/AdminDeliverers';
 
 function App() {
   return (
@@ -43,6 +45,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="/cart"
+                    element={
+                      <ProtectedRoute>
+                        <Cart />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route 
                     path="/orders" 
                     element={
@@ -66,6 +76,14 @@ function App() {
                         <ReviewOrder />
                       </ProtectedRoute>
                     } 
+                  />
+                  <Route
+                    path="/reviews"
+                    element={
+                      <ProtectedRoute>
+                        <Reviews />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route 
                     path="/profile" 
@@ -96,6 +114,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <AdminOrders />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/deliverers" 
+                    element={
+                      <ProtectedRoute>
+                        <AdminDeliverers />
                       </ProtectedRoute>
                     } 
                   />

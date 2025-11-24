@@ -5,6 +5,7 @@ import { isValidEmail } from '../utils/formatters';
 import './Auth.css';
 
 function Login() {
+  const [userType, setUserType] = useState('cliente'); // 'cliente' or 'restaurante'
   const [formData, setFormData] = useState({
     email: '',
     senha: ''
@@ -22,7 +23,6 @@ function Login() {
       [name]: value
     });
     
-    // Clear field error when user starts typing
     if (fieldErrors[name]) {
       setFieldErrors({
         ...fieldErrors,
@@ -61,15 +61,20 @@ function Login() {
     setLoading(true);
     
     try {
-      const result = await login(formData);
-      const userType = result?.user?.tipo;
+      const credentials = userType === 'restaurante' 
+        ? { email_admin: formData.email, senha_admin: formData.senha }
+        : { email: formData.email, senha: formData.senha };
 
-      if (userType === 'restaurante') {
+      const result = await login(credentials, userType);
+      const type = result?.user?.tipo;
+
+      if (type === 'restaurante') {
         navigate('/admin/restaurant');
       } else {
         navigate('/');
       }
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
@@ -77,19 +82,41 @@ function Login() {
   };
 
   return (
-    <div className="login">
-      <h1>Entrar</h1>
-      {error && <div className="error">{error}</div>}
-      <form onSubmit={handleSubmit}>
+    <div className="login fade-in">
+      <div className="login-header">
+        <h1>Bem-vindo de volta!</h1>
+        <p>Escolha como deseja acessar sua conta</p>
+      </div>
+
+      <div className="login-tabs">
+        <button 
+          className={`tab-btn ${userType === 'cliente' ? 'active' : ''}`}
+          onClick={() => setUserType('cliente')}
+          type="button"
+        >
+          👤 Cliente
+        </button>
+        <button 
+          className={`tab-btn ${userType === 'restaurante' ? 'active' : ''}`}
+          onClick={() => setUserType('restaurante')}
+          type="button"
+        >
+          🏪 Restaurante
+        </button>
+      </div>
+
+      {error && <div className="error slide-in-right">{error}</div>}
+      
+      <form onSubmit={handleSubmit} className="login-form">
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email {userType === 'restaurante' ? 'Administrativo' : ''}</label>
           <input
             type="email"
             id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="seu@email.com"
+            placeholder={userType === 'restaurante' ? "admin@restaurante.com" : "seu@email.com"}
             disabled={loading}
             className={fieldErrors.email ? 'input-error' : ''}
           />
@@ -103,19 +130,27 @@ function Login() {
             name="senha"
             value={formData.senha}
             onChange={handleChange}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="••••••••"
             disabled={loading}
             className={fieldErrors.senha ? 'input-error' : ''}
           />
           {fieldErrors.senha && <span className="field-error">{fieldErrors.senha}</span>}
         </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Entrando...' : 'Entrar'}
+        
+        <button type="submit" disabled={loading} className="btn-primary btn-block">
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="spinner-small"></span> Entrando...
+            </span>
+          ) : 'Entrar'}
         </button>
       </form>
-      <p>
-        Não tem uma conta? <Link to="/register">Cadastre-se</Link>
-      </p>
+      
+      <div className="login-footer">
+        <p>
+          Não tem uma conta? <Link to="/register">Cadastre-se</Link>
+        </p>
+      </div>
     </div>
   );
 }

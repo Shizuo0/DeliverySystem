@@ -32,6 +32,9 @@ CREATE TABLE Restaurantes (
     senha_admin VARCHAR(255) NOT NULL,
     tipo_cozinha VARCHAR(100) NULL,
     telefone VARCHAR(20) NULL,
+    descricao TEXT NULL,
+    tempo_entrega_estimado INT NULL,
+    taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
     status_operacional ENUM('Aberto', 'Fechado') NOT NULL DEFAULT 'Fechado'
 );
 

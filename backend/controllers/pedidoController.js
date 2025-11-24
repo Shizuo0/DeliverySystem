@@ -54,6 +54,22 @@ class PedidoController {
     }
   }
 
+  // Confirmar entrega (cliente autenticado)
+  async confirmDelivery(req, res, next) {
+    try {
+      const pedido = await pedidoService.confirmDeliveryByCliente(
+        parseInt(req.params.id),
+        req.clienteId
+      );
+      res.json({
+        message: 'Entrega confirmada com sucesso',
+        pedido
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Obter pedido específico (restaurante autenticado)
   async getByIdRestaurante(req, res, next) {
     try {

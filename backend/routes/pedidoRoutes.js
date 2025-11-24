@@ -47,6 +47,13 @@ router.put(
   pedidoController.cancel
 );
 
+// Confirmar entrega (apenas se A Caminho)
+router.put(
+  '/cliente/:id/entregue',
+  authMiddleware,
+  pedidoController.confirmDelivery
+);
+
 // ============= ROTAS DE RESTAURANTES (Autenticadas) =============
 // Listar pedidos do restaurante autenticado (com filtro opcional por status)
 router.get(

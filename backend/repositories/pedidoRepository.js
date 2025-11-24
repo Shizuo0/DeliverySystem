@@ -26,12 +26,25 @@ class PedidoRepository {
       SELECT 
         p.*,
         c.nome as cliente_nome,
+        c.telefone as cliente_telefone,
         r.nome as restaurante_nome,
-        e.nome as entregador_nome
+        r.telefone as restaurante_telefone,
+        r.tipo_cozinha as restaurante_tipo_cozinha,
+        e.nome as entregador_nome,
+        ec.logradouro as end_logradouro,
+        ec.numero as end_numero,
+        ec.complemento as end_complemento,
+        ec.bairro as end_bairro,
+        ec.cidade as end_cidade,
+        ec.estado as end_estado,
+        ec.cep as end_cep,
+        a.id_avaliacao
       FROM Pedidos p
       LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
       LEFT JOIN Restaurantes r ON p.id_restaurante = r.id_restaurante
       LEFT JOIN Entregadores e ON p.id_entregador = e.id_entregador
+      LEFT JOIN EnderecosClientes ec ON p.id_endereco_cliente = ec.id_endereco_cliente
+      LEFT JOIN Avaliacoes a ON p.id_pedido = a.id_pedido
       WHERE p.id_pedido = ?
     `;
     const [rows] = await db.execute(query, [id]);
@@ -44,10 +57,12 @@ class PedidoRepository {
       SELECT 
         p.*,
         r.nome as restaurante_nome,
-        e.nome as entregador_nome
+        e.nome as entregador_nome,
+        a.id_avaliacao
       FROM Pedidos p
       LEFT JOIN Restaurantes r ON p.id_restaurante = r.id_restaurante
       LEFT JOIN Entregadores e ON p.id_entregador = e.id_entregador
+      LEFT JOIN Avaliacoes a ON p.id_pedido = a.id_pedido
       WHERE p.id_cliente = ?
       ORDER BY p.data_hora DESC
     `;

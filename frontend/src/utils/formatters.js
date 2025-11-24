@@ -72,3 +72,55 @@ export const isValidPhone = (phone) => {
   const numbers = phone.replace(/\D/g, '');
   return numbers.length === 10 || numbers.length === 11;
 };
+
+// Format CNPJ: 00.000.000/0000-00
+export const formatCNPJ = (value) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .substring(0, 18);
+};
+
+// Validate CNPJ
+export const isValidCNPJ = (cnpj) => {
+  const numbers = cnpj.replace(/\D/g, '');
+  
+  if (numbers.length !== 14) return false;
+  
+  // Check for known invalid CNPJs
+  if (/^(\d)\1{13}$/.test(numbers)) return false;
+  
+  // Validate first digit
+  let length = numbers.length - 2;
+  let numbers_only = numbers.substring(0, length);
+  let digits = numbers.substring(length);
+  let sum = 0;
+  let pos = length - 7;
+  
+  for (let i = length; i >= 1; i--) {
+    sum += numbers_only.charAt(length - i) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  
+  let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+  if (result !== parseInt(digits.charAt(0))) return false;
+  
+  // Validate second digit
+  length = length + 1;
+  numbers_only = numbers.substring(0, length);
+  sum = 0;
+  pos = length - 7;
+  
+  for (let i = length; i >= 1; i--) {
+    sum += numbers_only.charAt(length - i) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  
+  result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+  if (result !== parseInt(digits.charAt(1))) return false;
+  
+  return true;
+};

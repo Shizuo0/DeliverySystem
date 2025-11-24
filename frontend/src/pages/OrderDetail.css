@@ -228,7 +228,20 @@
   color: var(--text-dark);
 }
 
-/* Botões */
+/* Ações do Pedido */
+.order-actions-detail {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.order-actions-detail button,
+.order-actions-detail a {
+  flex: 1;
+  min-width: 200px;
+}
+
 .btn-review {
   width: 100%;
   margin-top: 1rem;

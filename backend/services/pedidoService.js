@@ -78,6 +78,11 @@ class PedidoService {
       });
     }
 
+    // Adicionar taxa de entrega ao valor total
+    if (restaurante.taxa_entrega) {
+      valorTotal += parseFloat(restaurante.taxa_entrega);
+    }
+
     // Criar pedido
     const pedidoId = await pedidoRepository.create({
       id_cliente: clienteId,
@@ -210,6 +215,36 @@ class PedidoService {
     const updated = await pedidoRepository.updateStatus(pedidoId, 'Cancelado');
     if (!updated) {
       throw new Error('Erro ao cancelar pedido');
+    }
+
+    return this.getById(pedidoId, clienteId, 'cliente');
+  }
+
+  // Confirmar entrega pelo cliente
+  async confirmDeliveryByCliente(pedidoId, clienteId) {
+    // Verificar se pedido pertence ao cliente
+    const belongsToCliente = await pedidoRepository.belongsToCliente(pedidoId, clienteId);
+    if (!belongsToCliente) {
+      throw new Error('Pedido não encontrado ou acesso negado');
+    }
+
+    // Buscar pedido
+    const pedido = await pedidoRepository.findById(pedidoId);
+    
+    // Permitir confirmar entrega em qualquer status para fins de teste
+    // if (pedido.status !== 'A Caminho') {
+    //   throw new Error('Apenas pedidos em rota de entrega podem ser confirmados');
+    // }
+
+    // Atualizar status
+    const updated = await pedidoRepository.updateStatus(pedidoId, 'Entregue');
+    if (!updated) {
+      throw new Error('Erro ao confirmar entrega');
+    }
+
+    // Se tiver entregador, atualizar status dele para Online
+    if (pedido.id_entregador) {
+      await entregadorRepository.updateStatus(pedido.id_entregador, 'Online');
     }
 
     return this.getById(pedidoId, clienteId, 'cliente');

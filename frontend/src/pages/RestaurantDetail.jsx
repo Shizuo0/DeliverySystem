@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../services/restaurantService';
 import Loading from '../components/Loading';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import './RestaurantDetail.css';
 
 function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const toast = useToast();
   const [restaurant, setRestaurant] = useState(null);
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +31,7 @@ function RestaurantDetail() {
         getRestaurantMenu(id)
       ]);
       setRestaurant(restaurantData);
-      setMenu(menuData);
+      setMenu(menuData.cardapio || []);
     } catch (err) {
       setError('Erro ao carregar dados do restaurante');
       console.error(err);
@@ -34,20 +40,34 @@ function RestaurantDetail() {
     }
   };
 
-  const groupedMenu = menu.reduce((acc, item) => {
-    const categoria = item.categoria_nome || 'Sem categoria';
-    if (!acc[categoria]) {
-      acc[categoria] = [];
+  const categories = menu.map(cat => cat.nome);
+
+  const handleAddItem = (item) => {
+    if (!user) {
+      toast.info('Faça login para adicionar itens ao carrinho');
+      navigate('/login');
+      return;
     }
-    acc[categoria].push(item);
-    return acc;
-  }, {});
 
-  const categories = Object.keys(groupedMenu);
+    if (user.tipo !== 'cliente') {
+      toast.warning('Apenas clientes podem criar pedidos.');
+      return;
+    }
 
-  const filteredMenu = selectedCategory === 'all' 
-    ? menu 
-    : groupedMenu[selectedCategory] || [];
+    addToCart(
+      {
+        id_item: item.id_item || item.id_item_cardapio || item.id,
+        nome: item.nome,
+        descricao: item.descricao,
+        preco: Number(item.preco),
+      },
+      {
+        id: restaurant.id || restaurant.id_restaurante,
+        nome: restaurant.nome,
+        taxa_entrega: restaurant.taxa_entrega
+      }
+    );
+  };
 
   if (loading) {
     return <Loading message="Carregando restaurante..." />;
@@ -71,7 +91,7 @@ function RestaurantDetail() {
     );
   }
 
-  const isOpen = restaurant.aberto;
+  const isOpen = restaurant.status_operacional === 'Aberto';
 
   return (
     <div className="restaurant-detail">
@@ -134,13 +154,13 @@ function RestaurantDetail() {
         )}
 
         {selectedCategory === 'all' ? (
-          categories.map(category => (
-            <div key={category} className="category-section">
-              <h3 className="category-title">{category}</h3>
+          menu.map(category => (
+            <div key={category.id_categoria} className="category-section">
+              <h3 className="category-title">{category.nome}</h3>
               <div className="menu-items">
-                {groupedMenu[category].map(item => (
+                {category.itens.map(item => (
                   <div 
-                    key={item.id} 
+                    key={item.id || item.id_item_cardapio} 
                     className={`menu-item ${!item.disponivel ? 'unavailable' : ''}`}
                   >
                     <div className="menu-item-info">
@@ -154,7 +174,7 @@ function RestaurantDetail() {
                       <div className="unavailable-badge">Indisponível</div>
                     )}
                     {item.disponivel && isOpen && (
-                      <button className="btn-add-item">
+                      <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                         Adicionar
                       </button>
                     )}
@@ -165,9 +185,9 @@ function RestaurantDetail() {
           ))
         ) : (
           <div className="menu-items">
-            {filteredMenu.map(item => (
+            {menu.find(c => c.nome === selectedCategory)?.itens.map(item => (
               <div 
-                key={item.id} 
+                key={item.id || item.id_item_cardapio} 
                 className={`menu-item ${!item.disponivel ? 'unavailable' : ''}`}
               >
                 <div className="menu-item-info">
@@ -181,7 +201,7 @@ function RestaurantDetail() {
                   <div className="unavailable-badge">Indisponível</div>
                 )}
                 {item.disponivel && isOpen && (
-                  <button className="btn-add-item">
+                  <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                     Adicionar
                   </button>
                 )}

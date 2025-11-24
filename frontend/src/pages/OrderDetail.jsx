@@ -23,7 +23,7 @@ function OrderDetail() {
 
   const loadOrder = async () => {
     try {
-      const response = await api.get(`/pedidos/${id}`);
+      const response = await api.get(`/pedidos/cliente/${id}`);
       setOrder(response.data);
     } catch (error) {
       console.error('Erro ao carregar pedido:', error);
@@ -34,6 +34,34 @@ function OrderDetail() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) {
+      return;
+    }
+
+    try {
+      await api.put(`/pedidos/cliente/${id}/cancelar`);
+      toast.success('Pedido cancelado com sucesso');
+      loadOrder();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao cancelar pedido');
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!window.confirm('Confirma que recebeu o pedido?')) {
+      return;
+    }
+
+    try {
+      await api.put(`/pedidos/cliente/${id}/entregue`);
+      toast.success('Entrega confirmada com sucesso');
+      loadOrder();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao confirmar entrega');
+    }
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -41,6 +69,16 @@ function OrderDetail() {
   if (!order) {
     return null;
   }
+
+  const normalizeStatus = (status) => {
+    if (!status) return '';
+    const lower = status.toLowerCase();
+    if (lower === 'em preparo') return 'em_preparo';
+    if (lower === 'a caminho') return 'em_entrega';
+    return lower;
+  };
+
+  const statusKey = normalizeStatus(order.status);
 
   const getStatusClass = (status) => {
     const statusMap = {
@@ -69,8 +107,16 @@ function OrderDetail() {
   };
 
   const statusSteps = ['pendente', 'confirmado', 'em_preparo', 'pronto', 'em_entrega', 'entregue'];
-  const currentStepIndex = statusSteps.indexOf(order.status);
-  const isCancelled = order.status === 'cancelado';
+  const currentStepIndex = statusSteps.indexOf(statusKey);
+  const isCancelled = statusKey === 'cancelado';
+
+  const subtotal = order.itens?.reduce((acc, item) => {
+    const price = item.preco_unitario_gravado || item.preco_unitario || 0;
+    return acc + (Number(price) * item.quantidade);
+  }, 0) || 0;
+  
+  const total = Number(order.valor_total || order.total || 0);
+  const deliveryFee = total - subtotal;
 
   return (
     <div className="order-detail-page">
@@ -130,7 +176,7 @@ function OrderDetail() {
                     <span className="item-name">{item.nome_item}</span>
                   </div>
                   <span className="item-price">
-                    R$ {(item.preco_unitario * item.quantidade).toFixed(2)}
+                    R$ {(Number(item.preco_unitario_gravado || item.preco_unitario || 0) * item.quantidade).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -139,15 +185,15 @@ function OrderDetail() {
             <div className="order-totals">
               <div className="total-row">
                 <span>Subtotal</span>
-                <span>R$ {(order.total - 5).toFixed(2)}</span>
+                <span>R$ {subtotal.toFixed(2)}</span>
               </div>
               <div className="total-row">
                 <span>Taxa de entrega</span>
-                <span>R$ 5.00</span>
+                <span>R$ {deliveryFee.toFixed(2)}</span>
               </div>
               <div className="total-row final">
                 <strong>Total</strong>
-                <strong>R$ {order.total.toFixed(2)}</strong>
+                <strong>R$ {total.toFixed(2)}</strong>
               </div>
             </div>
           </section>
@@ -172,22 +218,43 @@ function OrderDetail() {
           <section className="order-section">
             <h2>Forma de Pagamento</h2>
             <div className="payment-card">
-              {order.forma_pagamento === 'dinheiro' && '💵 Dinheiro'}
-              {order.forma_pagamento === 'cartao_credito' && '💳 Cartão de Crédito'}
-              {order.forma_pagamento === 'cartao_debito' && '💳 Cartão de Débito'}
-              {order.forma_pagamento === 'pix' && '📱 PIX'}
+              {order.metodo_pagamento === 'Dinheiro' && '💵 '}
+              {order.metodo_pagamento === 'Cartão de Crédito' && '💳 '}
+              {order.metodo_pagamento === 'Cartão de Débito' && '💳 '}
+              {order.metodo_pagamento === 'PIX' && '📱 '}
+              {order.metodo_pagamento}
             </div>
           </section>
 
-          {/* Botão de Avaliação */}
-          {order.status === 'entregue' && !order.avaliacao && (
-            <button
-              className="btn-primary btn-review"
-              onClick={() => navigate(`/orders/${id}/review`)}
-            >
-              ⭐ Avaliar Pedido
-            </button>
-          )}
+          {/* Ações do Pedido */}
+          <div className="order-actions-detail">
+            {statusKey === 'pendente' && (
+              <button 
+                className="btn-danger-outline"
+                onClick={handleCancel}
+              >
+                Cancelar Pedido
+              </button>
+            )}
+
+            {statusKey !== 'entregue' && statusKey !== 'cancelado' && (
+              <button 
+                className="btn-success"
+                onClick={handleConfirmDelivery}
+              >
+                Confirmar Entrega
+              </button>
+            )}
+
+            {statusKey === 'entregue' && !order.avaliacao && (
+              <button
+                className="btn-primary btn-review"
+                onClick={() => navigate(`/orders/${id}/review`)}
+              >
+                ⭐ Avaliar Pedido
+              </button>
+            )}
+          </div>
 
           {order.avaliacao && (
             <div className="review-completed">

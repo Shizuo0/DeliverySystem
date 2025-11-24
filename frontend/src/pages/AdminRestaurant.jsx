@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getRestaurantById, updateRestaurant, toggleRestaurantStatus } from '../services/restaurantService';
+import { getRestaurantById, updateRestaurant, updateRestaurantStatus } from '../services/restaurantService';
 import { formatPhone, removeFormatting, isValidPhone } from '../utils/formatters';
 import Loading from '../components/Loading';
 import './AdminRestaurant.css';
@@ -23,15 +23,19 @@ function AdminRestaurant() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    if (user?.restaurante_id) {
+    if (user?.id_restaurante) {
       fetchRestaurant();
+    } else if (user && !user.id_restaurante) {
+      // If user is loaded but no restaurant ID, stop loading
+      setLoading(false);
+      setError('ID do restaurante não encontrado no perfil do usuário.');
     }
   }, [user]);
 
   const fetchRestaurant = async () => {
     try {
       setLoading(true);
-      const data = await getRestaurantById(user.restaurante_id);
+      const data = await getRestaurantById(user.id_restaurante);
       setRestaurant(data);
       setFormData({
         nome: data.nome || '',
@@ -103,8 +107,11 @@ function AdminRestaurant() {
     setError('');
     setSuccess('');
     setFormData({
-      ...formData,
-      telefone: formatPhone(restaurant.telefone || '')
+      nome: restaurant.nome || '',
+      descricao: restaurant.descricao || '',
+      telefone: formatPhone(restaurant.telefone || ''),
+      tempo_entrega_estimado: restaurant.tempo_entrega_estimado || '',
+      taxa_entrega: restaurant.taxa_entrega || ''
     });
   };
 
@@ -142,7 +149,7 @@ function AdminRestaurant() {
       };
 
       const updated = await updateRestaurant(dataToSend);
-      setRestaurant(updated);
+      setRestaurant(updated.restaurante);
       setSuccess('Informações atualizadas com sucesso!');
       setIsEditing(false);
 
@@ -157,9 +164,11 @@ function AdminRestaurant() {
   const handleToggleStatus = async () => {
     try {
       setSaving(true);
-      const updated = await toggleRestaurantStatus();
-      setRestaurant(updated);
-      setSuccess(`Restaurante ${updated.aberto ? 'aberto' : 'fechado'} com sucesso!`);
+      const newStatus = restaurant.status_operacional === 'Aberto' ? 'Fechado' : 'Aberto';
+      const response = await updateRestaurantStatus(newStatus);
+      // The backend returns { message, restaurante }
+      setRestaurant(response.restaurante);
+      setSuccess(`Restaurante ${newStatus === 'Aberto' ? 'aberto' : 'fechado'} com sucesso!`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao alterar status');
@@ -180,6 +189,8 @@ function AdminRestaurant() {
     );
   }
 
+  const isOpen = restaurant.status_operacional === 'Aberto';
+
   return (
     <div className="admin-restaurant">
       <div className="page-header">
@@ -188,9 +199,9 @@ function AdminRestaurant() {
           <button 
             onClick={handleToggleStatus}
             disabled={saving}
-            className={`btn-toggle-status ${restaurant.aberto ? 'open' : 'closed'}`}
+            className={`btn-toggle-status ${isOpen ? 'open' : 'closed'}`}
           >
-            {restaurant.aberto ? '🟢 Aberto' : '🔴 Fechado'}
+            {isOpen ? '🟢 Aberto' : '🔴 Fechado'}
           </button>
           {!isEditing && (
             <button onClick={handleEdit} className="btn-secondary">
@@ -318,8 +329,8 @@ function AdminRestaurant() {
             </div>
             <div className="info-field">
               <strong>Status:</strong>
-              <span className={restaurant.aberto ? 'status-open' : 'status-closed'}>
-                {restaurant.aberto ? 'Aberto' : 'Fechado'}
+              <span className={isOpen ? 'status-open' : 'status-closed'}>
+                {isOpen ? 'Aberto' : 'Fechado'}
               </span>
             </div>
           </div>

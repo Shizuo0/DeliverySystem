@@ -86,45 +86,6 @@ body {
   animation: scaleIn 0.3s ease-out;
 }
 
-.navbar {
-  background-color: var(--white);
-  box-shadow: var(--shadow);
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-brand a {
-  color: var(--primary-red);
-  text-decoration: none;
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-
-.nav-links {
-  display: flex;
-  list-style: none;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav-links a {
-  color: var(--text-dark);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
-  font-size: 0.95rem;
-}
-
-.nav-links a:hover {
-  color: var(--primary-red);
-}
-
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -214,9 +175,16 @@ body {
   box-shadow: 0 0 0 3px rgba(234, 29, 44, 0.1);
 }
 
-button {
-  background-color: var(--primary-red);
-  color: var(--white);
+/* Base Button Styles */
+button,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-danger-outline,
+.btn-success {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.875rem 2rem;
   border: none;
   border-radius: 8px;
@@ -226,10 +194,16 @@ button {
   transition: var(--transition);
   box-shadow: var(--shadow);
   font-family: inherit;
+  text-decoration: none;
+  line-height: 1.2;
 }
 
-button:hover:not(:disabled) {
-  background-color: var(--primary-red-hover);
+button:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.btn-outline:hover:not(:disabled),
+.btn-danger-outline:hover:not(:disabled),
+.btn-success:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
 }
@@ -248,6 +222,12 @@ button:disabled {
 .btn-primary {
   background-color: var(--primary-red);
   color: var(--white);
+  border: 2px solid var(--primary-red);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-red-hover);
+  border-color: var(--primary-red-hover);
 }
 
 .btn-secondary {
@@ -271,6 +251,28 @@ button:disabled {
 .btn-outline:hover:not(:disabled) {
   background-color: var(--primary-red);
   color: var(--white);
+}
+
+.btn-danger-outline {
+  background-color: transparent;
+  border: 2px solid var(--error-red);
+  color: var(--error-red);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background-color: var(--error-red);
+  color: var(--white);
+}
+
+.btn-success {
+  background-color: var(--success-green);
+  color: var(--white);
+  border: 2px solid var(--success-green);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #388E3C;
+  border-color: #388E3C;
 }
 
 .btn-back {
@@ -308,49 +310,6 @@ button:disabled {
   border-radius: 8px;
   margin-bottom: 1rem;
   border-left: 4px solid #2E7D32;
-}
-
-/* Home page */
-.home {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.home h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: var(--text-dark);
-  font-weight: 700;
-}
-
-.home p {
-  font-size: 1.25rem;
-  color: var(--text-light);
-  margin-bottom: 2rem;
-}
-
-.home-links {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.home-links a {
-  background-color: var(--primary-red);
-  color: var(--white);
-  padding: 1rem 2rem;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: background-color 0.2s, transform 0.1s;
-  box-shadow: var(--shadow);
-}
-
-.home-links a:hover {
-  background-color: var(--primary-red-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
 }
 
 /* Restaurant cards */
