@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../services/restaurantService';
-import { useCart } from '../context/CartContext';
 import Loading from '../components/Loading';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +10,9 @@ import './RestaurantDetail.css';
 function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const toast = useToast();
   const [restaurant, setRestaurant] = useState(null);
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,18 +65,6 @@ function RestaurantDetail() {
         id: restaurant.id || restaurant.id_restaurante,
         nome: restaurant.nome,
         taxa_entrega: restaurant.taxa_entrega
-      }
-    );
-  };
-
-  const handleAddItem = (item) => {
-    addItem(
-      item,
-      {
-        id: restaurant.id,
-        nome: restaurant.nome,
-        taxa_entrega: restaurant.taxa_entrega,
-        tempo_entrega_estimado: restaurant.tempo_entrega_estimado
       }
     );
   };
@@ -195,10 +184,7 @@ function RestaurantDetail() {
                       <div className="unavailable-badge">Indisponível</div>
                     )}
                     {item.disponivel && isOpen && (
-                      <button 
-                        className="btn-add-item"
-                        onClick={() => handleAddItem(item)}
-                      >
+                      <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                         Adicionar
                       </button>
                     )}
@@ -225,10 +211,7 @@ function RestaurantDetail() {
                   <div className="unavailable-badge">Indisponível</div>
                 )}
                 {item.disponivel && isOpen && (
-                  <button 
-                    className="btn-add-item"
-                    onClick={() => handleAddItem(item)}
-                  >
+                  <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                     Adicionar
                   </button>
                 )}
