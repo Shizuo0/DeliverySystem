@@ -20,11 +20,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary-red);
   text-decoration: none;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
   transition: transform 0.2s;
 }
 
@@ -32,13 +28,9 @@
   transform: scale(1.05);
 }
 
-.brand-icon {
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.brand-text {
-  display: inline-block;
+.brand-logo {
+  height: 60px;
+  width: auto;
 }
 
 .mobile-menu-toggle {
@@ -277,10 +269,6 @@
     display: flex;
   }
 
-  .brand-text {
-    font-size: 1.2rem;
-  }
-
   .nav-content {
     position: fixed;
     top: 0;
@@ -340,11 +328,7 @@
 }
 
 @media (max-width: 480px) {
-  .brand-icon {
-    font-size: 1.5rem;
-  }
-
-  .brand-text {
-    font-size: 1rem;
+  .brand-logo {
+    height: 40px;
   }
 }

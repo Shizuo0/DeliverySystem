@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import UserMenu from './UserMenu';
+import logo from '../assets/logo.svg';
 import './Navbar.css';
 
 function Navbar() {
@@ -41,8 +42,7 @@ function Navbar() {
       <div className="nav-container">
         <div className="nav-brand">
           <NavLink to="/" onClick={closeMobileMenu}>
-            <span className="brand-icon">🍕</span>
-            <span className="brand-text">Delivery System</span>
+            <img src={logo} alt="Delivery System" className="brand-logo" />
           </NavLink>
         </div>
 
