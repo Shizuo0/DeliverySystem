@@ -24,7 +24,12 @@ const registerRestauranteValidation = [
   body('telefone')
     .optional()
     .trim()
-    .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos')
+    .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos'),
+
+  body('cnpj')
+    .optional()
+    .trim()
+    .matches(/^\d{14}$/).withMessage('CNPJ deve conter 14 dígitos numéricos')
 ];
 
 const loginRestauranteValidation = [
@@ -59,6 +64,11 @@ const updateRestauranteValidation = [
     .optional()
     .trim()
     .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos'),
+
+  body('cnpj')
+    .optional()
+    .trim()
+    .matches(/^\d{14}$/).withMessage('CNPJ deve conter 14 dígitos numéricos'),
   
   body('descricao')
     .optional()

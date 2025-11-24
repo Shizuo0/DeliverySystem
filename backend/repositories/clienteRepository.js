@@ -4,14 +4,15 @@ class ClienteRepository {
   // Criar novo cliente
   async create(clienteData) {
     const query = `
-      INSERT INTO Clientes (nome, email, senha, telefone)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO Clientes (nome, email, senha, telefone, cpf)
+      VALUES (?, ?, ?, ?, ?)
     `;
     const [result] = await db.execute(query, [
       clienteData.nome,
       clienteData.email,
       clienteData.senha,
-      clienteData.telefone
+      clienteData.telefone,
+      clienteData.cpf || null
     ]);
     return result.insertId;
   }
@@ -43,6 +44,10 @@ class ClienteRepository {
       fields.push('telefone = ?');
       values.push(clienteData.telefone);
     }
+    if (clienteData.cpf) {
+      fields.push('cpf = ?');
+      values.push(clienteData.cpf);
+    }
     if (clienteData.email) {
       fields.push('email = ?');
       values.push(clienteData.email);
@@ -71,7 +76,7 @@ class ClienteRepository {
 
   // Listar todos os clientes
   async findAll() {
-    const query = 'SELECT id_cliente, nome, email, telefone, data_cadastro FROM Clientes';
+    const query = 'SELECT id_cliente, nome, email, telefone, cpf, data_cadastro FROM Clientes';
     const [rows] = await db.execute(query);
     return rows;
   }

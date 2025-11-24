@@ -244,29 +244,42 @@ function Profile() {
             </div>
 
             {isRestaurante ? (
-              <div className="form-group">
-                <label htmlFor="tipo_cozinha">Tipo de Cozinha</label>
-                <select
-                  id="tipo_cozinha"
-                  name="tipo_cozinha"
-                  value={formData.tipo_cozinha}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className={fieldErrors.tipo_cozinha ? 'input-error' : ''}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="Brasileira">Brasileira</option>
-                  <option value="Italiana">Italiana</option>
-                  <option value="Japonesa">Japonesa</option>
-                  <option value="Mexicana">Mexicana</option>
-                  <option value="Lanches">Lanches</option>
-                  <option value="Pizzaria">Pizzaria</option>
-                  <option value="Doces & Bolos">Doces & Bolos</option>
-                  <option value="Saudável">Saudável</option>
-                  <option value="Outros">Outros</option>
-                </select>
-                {fieldErrors.tipo_cozinha && <span className="field-error">{fieldErrors.tipo_cozinha}</span>}
-              </div>
+              <>
+                <div className="form-group">
+                  <label htmlFor="tipo_cozinha">Tipo de Cozinha</label>
+                  <select
+                    id="tipo_cozinha"
+                    name="tipo_cozinha"
+                    value={formData.tipo_cozinha}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className={fieldErrors.tipo_cozinha ? 'input-error' : ''}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="Brasileira">Brasileira</option>
+                    <option value="Italiana">Italiana</option>
+                    <option value="Japonesa">Japonesa</option>
+                    <option value="Mexicana">Mexicana</option>
+                    <option value="Lanches">Lanches</option>
+                    <option value="Pizzaria">Pizzaria</option>
+                    <option value="Doces & Bolos">Doces & Bolos</option>
+                    <option value="Saudável">Saudável</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                  {fieldErrors.tipo_cozinha && <span className="field-error">{fieldErrors.tipo_cozinha}</span>}
+                </div>
+                <div className="form-group">
+                  <label>CNPJ</label>
+                  <input
+                    type="text"
+                    value={formatCNPJ(user.cnpj || '')}
+                    disabled
+                    className="input-disabled"
+                    title="CNPJ não pode ser alterado"
+                  />
+                  <small className="field-hint">O CNPJ não pode ser alterado</small>
+                </div>
+              </>
             ) : (
               <div className="form-group">
                 <label>CPF</label>
@@ -305,10 +318,16 @@ function Profile() {
               <span>{formatPhone(user.telefone || '')}</span>
             </div>
             {isRestaurante ? (
-              <div className="profile-field">
-                <strong>Tipo de Cozinha:</strong>
-                <span>{user.tipo_cozinha || 'Não informado'}</span>
-              </div>
+              <>
+                <div className="profile-field">
+                  <strong>Tipo de Cozinha:</strong>
+                  <span>{user.tipo_cozinha || 'Não informado'}</span>
+                </div>
+                <div className="profile-field">
+                  <strong>CNPJ:</strong>
+                  <span>{formatCNPJ(user.cnpj || '')}</span>
+                </div>
+              </>
             ) : (
               <div className="profile-field">
                 <strong>CPF:</strong>

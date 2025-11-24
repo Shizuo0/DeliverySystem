@@ -6,6 +6,7 @@ class Restaurante {
     this.senha_admin = data.senha_admin;
     this.tipo_cozinha = data.tipo_cozinha;
     this.telefone = data.telefone;
+    this.cnpj = data.cnpj;
     this.descricao = data.descricao;
     this.tempo_entrega_estimado = data.tempo_entrega_estimado;
     this.taxa_entrega = data.taxa_entrega;

@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { 
   formatCPF, 
+  formatCNPJ,
   formatPhone, 
   removeFormatting, 
   isValidCPF, 
+  isValidCNPJ,
   isValidEmail, 
   isValidPhone 
 } from '../utils/formatters';
@@ -20,6 +22,7 @@ function Register() {
     confirmarSenha: '',
     telefone: '',
     cpf: '',
+    cnpj: '',
     tipo_cozinha: ''
   });
   const [error, setError] = useState('');
@@ -35,6 +38,8 @@ function Register() {
     // Apply formatting for CPF and phone
     if (name === 'cpf') {
       formattedValue = formatCPF(value);
+    } else if (name === 'cnpj') {
+      formattedValue = formatCNPJ(value);
     } else if (name === 'telefone') {
       formattedValue = formatPhone(value);
     }
@@ -97,6 +102,11 @@ function Register() {
       if (!formData.tipo_cozinha) {
         errors.tipo_cozinha = 'Tipo de cozinha é obrigatório';
       }
+      if (!formData.cnpj) {
+        errors.cnpj = 'CNPJ é obrigatório';
+      } else if (!isValidCNPJ(formData.cnpj)) {
+        errors.cnpj = 'CNPJ inválido';
+      }
     }
     
     setFieldErrors(errors);
@@ -134,7 +144,8 @@ function Register() {
           email_admin: formData.email.trim(),
           senha_admin: formData.senha,
           telefone: removeFormatting(formData.telefone),
-          tipo_cozinha: formData.tipo_cozinha
+          tipo_cozinha: formData.tipo_cozinha,
+          cnpj: removeFormatting(formData.cnpj)
         };
       }
       
@@ -230,29 +241,47 @@ function Register() {
         )}
 
         {userType === 'restaurante' && (
-          <div className="form-group">
-            <label htmlFor="tipo_cozinha">Tipo de Cozinha</label>
-            <select
-              id="tipo_cozinha"
-              name="tipo_cozinha"
-              value={formData.tipo_cozinha}
-              onChange={handleChange}
-              disabled={loading}
-              className={fieldErrors.tipo_cozinha ? 'input-error' : ''}
-            >
-              <option value="">Selecione...</option>
-              <option value="Brasileira">Brasileira</option>
-              <option value="Italiana">Italiana</option>
-              <option value="Japonesa">Japonesa</option>
-              <option value="Mexicana">Mexicana</option>
-              <option value="Lanches">Lanches</option>
-              <option value="Pizzaria">Pizzaria</option>
-              <option value="Doces & Bolos">Doces & Bolos</option>
-              <option value="Saudável">Saudável</option>
-              <option value="Outros">Outros</option>
-            </select>
-            {fieldErrors.tipo_cozinha && <span className="field-error">{fieldErrors.tipo_cozinha}</span>}
-          </div>
+          <>
+            <div className="form-group">
+              <label htmlFor="cnpj">CNPJ</label>
+              <input
+                type="text"
+                id="cnpj"
+                name="cnpj"
+                value={formData.cnpj}
+                onChange={handleChange}
+                placeholder="00.000.000/0000-00"
+                maxLength="18"
+                disabled={loading}
+                className={fieldErrors.cnpj ? 'input-error' : ''}
+              />
+              {fieldErrors.cnpj && <span className="field-error">{fieldErrors.cnpj}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="tipo_cozinha">Tipo de Cozinha</label>
+              <select
+                id="tipo_cozinha"
+                name="tipo_cozinha"
+                value={formData.tipo_cozinha}
+                onChange={handleChange}
+                disabled={loading}
+                className={fieldErrors.tipo_cozinha ? 'input-error' : ''}
+              >
+                <option value="">Selecione...</option>
+                <option value="Brasileira">Brasileira</option>
+                <option value="Italiana">Italiana</option>
+                <option value="Japonesa">Japonesa</option>
+                <option value="Mexicana">Mexicana</option>
+                <option value="Lanches">Lanches</option>
+                <option value="Pizzaria">Pizzaria</option>
+                <option value="Doces & Bolos">Doces & Bolos</option>
+                <option value="Saudável">Saudável</option>
+                <option value="Outros">Outros</option>
+              </select>
+              {fieldErrors.tipo_cozinha && <span className="field-error">{fieldErrors.tipo_cozinha}</span>}
+            </div>
+          </>
         )}
 
         <div className="form-group">

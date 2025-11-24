@@ -40,7 +40,7 @@ function RestaurantDetail() {
     }
   };
 
-  const categories = menu.map(cat => cat.nome);
+  const categories = menu.map(cat => cat.nome_categoria);
 
   const handleAddItem = (item) => {
     if (!user) {
@@ -135,28 +135,27 @@ function RestaurantDetail() {
         
         {categories.length > 1 && (
           <div className="category-filter">
-            <button 
-              className={selectedCategory === 'all' ? 'active' : ''}
-              onClick={() => setSelectedCategory('all')}
+            <label htmlFor="category-select" className="sr-only">Filtrar por categoria:</label>
+            <select
+              id="category-select"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="category-select"
             >
-              Todos
-            </button>
-            {categories.map(category => (
-              <button
-                key={category}
-                className={selectedCategory === category ? 'active' : ''}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
+              <option value="all">Todas as categorias</option>
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
         {selectedCategory === 'all' ? (
           menu.map(category => (
             <div key={category.id_categoria} className="category-section">
-              <h3 className="category-title">{category.nome}</h3>
+              <h3 className="category-title">{category.nome_categoria}</h3>
               <div className="menu-items">
                 {category.itens.map(item => (
                   <div 
@@ -185,9 +184,9 @@ function RestaurantDetail() {
           ))
         ) : (
           <div className="menu-items">
-            {menu.find(c => c.nome === selectedCategory)?.itens.map(item => (
+            {menu.find(c => c.nome_categoria === selectedCategory)?.itens.map(item => (
               <div 
-                key={item.id || item.id_item_cardapio} 
+                key={item.id || item.id_item_cardapio}  
                 className={`menu-item ${!item.disponivel ? 'unavailable' : ''}`}
               >
                 <div className="menu-item-info">

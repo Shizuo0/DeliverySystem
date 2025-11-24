@@ -4,8 +4,8 @@ class RestauranteRepository {
   // Criar novo restaurante
   async create(restauranteData) {
     const query = `
-      INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [result] = await db.execute(query, [
       restauranteData.nome,
@@ -13,6 +13,7 @@ class RestauranteRepository {
       restauranteData.senha_admin,
       restauranteData.tipo_cozinha || null,
       restauranteData.telefone || null,
+      restauranteData.cnpj || null,
       restauranteData.descricao || null,
       restauranteData.tempo_entrega_estimado || null,
       restauranteData.taxa_entrega || 0.00,
@@ -60,6 +61,10 @@ class RestauranteRepository {
       fields.push('telefone = ?');
       values.push(restauranteData.telefone);
     }
+    if (restauranteData.cnpj !== undefined) {
+      fields.push('cnpj = ?');
+      values.push(restauranteData.cnpj);
+    }
     if (restauranteData.descricao !== undefined) {
       fields.push('descricao = ?');
       values.push(restauranteData.descricao);
@@ -96,7 +101,7 @@ class RestauranteRepository {
 
   // Listar todos os restaurantes
   async findAll() {
-    const query = 'SELECT id_restaurante, nome, email_admin, tipo_cozinha, telefone, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional FROM Restaurantes';
+    const query = 'SELECT id_restaurante, nome, email_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional FROM Restaurantes';
     const [rows] = await db.execute(query);
     return rows;
   }
