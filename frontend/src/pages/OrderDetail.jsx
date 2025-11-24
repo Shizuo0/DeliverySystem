@@ -1,269 +1,245 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useToast } from '../context/ToastContext';
-import api from '../services/api';
+import { getOrderById } from '../services/orderService';
 import Loading from '../components/Loading';
 import './OrderDetail.css';
 
 function OrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
-
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    loadOrder();
+    fetchOrderDetail();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(loadOrder, 30000);
+    // Poll para atualização em tempo real a cada 30 segundos
+    const interval = setInterval(fetchOrderDetail, 30000);
     return () => clearInterval(interval);
   }, [id]);
 
-  const loadOrder = async () => {
+  const fetchOrderDetail = async () => {
     try {
-      const response = await api.get(`/pedidos/cliente/${id}`);
-      setOrder(response.data);
-    } catch (error) {
-      console.error('Erro ao carregar pedido:', error);
-      toast.error('Erro ao carregar pedido');
-      navigate('/orders');
+      const data = await getOrderById(id);
+      setOrder(data);
+      setError('');
+    } catch (err) {
+      setError('Erro ao carregar detalhes do pedido');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) {
-      return;
-    }
-
-    try {
-      await api.put(`/pedidos/cliente/${id}/cancelar`);
-      toast.success('Pedido cancelado com sucesso');
-      loadOrder();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Erro ao cancelar pedido');
-    }
+  const getStatusInfo = (status) => {
+    const statusMap = {
+      pendente: { label: 'Pendente', color: '#FFA726', icon: '⏳' },
+      confirmado: { label: 'Confirmado', color: '#42A5F5', icon: '✓' },
+      preparando: { label: 'Preparando', color: '#7E57C2', icon: '👨‍🍳' },
+      pronto: { label: 'Pronto', color: '#66BB6A', icon: '✓✓' },
+      saiu_entrega: { label: 'Saiu para Entrega', color: '#29B6F6', icon: '🚚' },
+      entregue: { label: 'Entregue', color: '#26A69A', icon: '✓✓✓' },
+      cancelado: { label: 'Cancelado', color: '#EF5350', icon: '✕' }
+    };
+    return statusMap[status] || { label: status, color: '#9E9E9E', icon: '?' };
   };
 
-  const handleConfirmDelivery = async () => {
-    if (!window.confirm('Confirma que recebeu o pedido?')) {
-      return;
+  const getStatusTimeline = (currentStatus) => {
+    const timeline = [
+      { key: 'pendente', label: 'Pedido Realizado' },
+      { key: 'confirmado', label: 'Confirmado' },
+      { key: 'preparando', label: 'Preparando' },
+      { key: 'pronto', label: 'Pronto' },
+      { key: 'saiu_entrega', label: 'Saiu para Entrega' },
+      { key: 'entregue', label: 'Entregue' }
+    ];
+
+    const statusOrder = ['pendente', 'confirmado', 'preparando', 'pronto', 'saiu_entrega', 'entregue'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+
+    if (currentStatus === 'cancelado') {
+      return timeline.map((item, index) => ({
+        ...item,
+        completed: index === 0,
+        active: false,
+        cancelled: true
+      }));
     }
 
-    try {
-      await api.put(`/pedidos/cliente/${id}/entregue`);
-      toast.success('Entrega confirmada com sucesso');
-      loadOrder();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Erro ao confirmar entrega');
-    }
+    return timeline.map((item, index) => ({
+      ...item,
+      completed: index <= currentIndex,
+      active: index === currentIndex
+    }));
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (loading) {
-    return <Loading />;
+    return <Loading message="Carregando detalhes do pedido..." />;
   }
 
-  if (!order) {
-    return null;
+  if (error || !order) {
+    return (
+      <div className="order-detail-container">
+        <div className="error-message">{error || 'Pedido não encontrado'}</div>
+        <button className="btn-primary" onClick={() => navigate('/orders')}>
+          Voltar para Meus Pedidos
+        </button>
+      </div>
+    );
   }
 
-  const normalizeStatus = (status) => {
-    if (!status) return '';
-    const lower = status.toLowerCase();
-    if (lower === 'em preparo') return 'em_preparo';
-    if (lower === 'a caminho') return 'em_entrega';
-    return lower;
-  };
-
-  const statusKey = normalizeStatus(order.status);
-
-  const getStatusClass = (status) => {
-    const statusMap = {
-      pendente: 'status-pending',
-      confirmado: 'status-confirmed',
-      em_preparo: 'status-preparing',
-      pronto: 'status-ready',
-      em_entrega: 'status-delivering',
-      entregue: 'status-delivered',
-      cancelado: 'status-cancelled'
-    };
-    return statusMap[status] || '';
-  };
-
-  const getStatusLabel = (status) => {
-    const labelMap = {
-      pendente: 'Pendente',
-      confirmado: 'Confirmado',
-      em_preparo: 'Em Preparo',
-      pronto: 'Pronto',
-      em_entrega: 'Em Entrega',
-      entregue: 'Entregue',
-      cancelado: 'Cancelado'
-    };
-    return labelMap[status] || status;
-  };
-
-  const statusSteps = ['pendente', 'confirmado', 'em_preparo', 'pronto', 'em_entrega', 'entregue'];
-  const currentStepIndex = statusSteps.indexOf(statusKey);
-  const isCancelled = statusKey === 'cancelado';
-
-  const subtotal = order.itens?.reduce((acc, item) => {
-    const price = item.preco_unitario_gravado || item.preco_unitario || 0;
-    return acc + (Number(price) * item.quantidade);
-  }, 0) || 0;
-  
-  const total = Number(order.valor_total || order.total || 0);
-  const deliveryFee = total - subtotal;
+  const statusInfo = getStatusInfo(order.status);
+  const timeline = getStatusTimeline(order.status);
 
   return (
-    <div className="order-detail-page">
-      <div className="order-detail-container">
-        <div className="order-header">
-          <button className="btn-back" onClick={() => navigate('/orders')}>
-            ← Voltar
-          </button>
-          <h1>Pedido #{order.id_pedido}</h1>
-        </div>
+    <div className="order-detail-container">
+      <button className="btn-back" onClick={() => navigate('/orders')}>
+        ← Voltar
+      </button>
 
-        {/* Status Timeline */}
-        {!isCancelled && (
-          <div className="status-timeline">
-            {statusSteps.map((step, index) => (
-              <div
-                key={step}
-                className={`timeline-step ${
-                  index <= currentStepIndex ? 'completed' : ''
-                } ${index === currentStepIndex ? 'active' : ''}`}
-              >
-                <div className="timeline-dot"></div>
-                <span className="timeline-label">{getStatusLabel(step)}</span>
+      <div className="order-detail-header">
+        <div>
+          <h1>Pedido #{order.id}</h1>
+          <p className="order-detail-date">{formatDate(order.data_pedido)}</p>
+        </div>
+        <div 
+          className="order-detail-status"
+          style={{ backgroundColor: statusInfo.color }}
+        >
+          <span>{statusInfo.icon}</span>
+          <span>{statusInfo.label}</span>
+        </div>
+      </div>
+
+      {/* Timeline de Status */}
+      <div className="status-timeline">
+        {timeline.map((step, index) => (
+          <div 
+            key={step.key} 
+            className={`timeline-step ${step.completed ? 'completed' : ''} ${step.active ? 'active' : ''} ${step.cancelled ? 'cancelled' : ''}`}
+          >
+            <div className="timeline-marker">
+              {step.completed && !step.cancelled && '✓'}
+              {step.active && !step.cancelled && '●'}
+              {step.cancelled && '✕'}
+            </div>
+            <div className="timeline-label">{step.label}</div>
+            {index < timeline.length - 1 && <div className="timeline-connector"></div>}
+          </div>
+        ))}
+      </div>
+
+      {order.status === 'cancelado' && (
+        <div className="cancel-notice">
+          Este pedido foi cancelado
+        </div>
+      )}
+
+      <div className="order-detail-content">
+        {/* Restaurante */}
+        <section className="detail-section">
+          <h2>Restaurante</h2>
+          <div className="restaurant-info">
+            <strong>{order.restaurante_nome}</strong>
+            {order.restaurante_telefone && (
+              <p>📞 {order.restaurante_telefone}</p>
+            )}
+          </div>
+        </section>
+
+        {/* Itens do Pedido */}
+        <section className="detail-section">
+          <h2>Itens do Pedido</h2>
+          <div className="order-items">
+            {order.itens && order.itens.map(item => (
+              <div key={item.id} className="order-item">
+                <div className="item-info">
+                  <span className="item-quantity">{item.quantidade}x</span>
+                  <span className="item-name">{item.item_nome}</span>
+                </div>
+                <span className="item-price">
+                  R$ {(parseFloat(item.preco_unitario) * item.quantidade).toFixed(2)}
+                </span>
               </div>
             ))}
           </div>
-        )}
-
-        {isCancelled && (
-          <div className="status-cancelled">
-            <span className="cancelled-icon">❌</span>
-            <h2>Pedido Cancelado</h2>
+          
+          <div className="order-totals">
+            <div className="total-row">
+              <span>Subtotal</span>
+              <span>R$ {parseFloat(order.valor_total - (order.taxa_entrega || 0)).toFixed(2)}</span>
+            </div>
+            <div className="total-row">
+              <span>Taxa de entrega</span>
+              <span>R$ {parseFloat(order.taxa_entrega || 0).toFixed(2)}</span>
+            </div>
+            <div className="total-row total">
+              <strong>Total</strong>
+              <strong>R$ {parseFloat(order.valor_total).toFixed(2)}</strong>
+            </div>
           </div>
-        )}
+        </section>
 
-        <div className="order-content">
-          {/* Informações do Restaurante */}
-          <section className="order-section">
-            <h2>Restaurante</h2>
-            <div className="restaurant-card">
-              <strong>{order.restaurante?.nome}</strong>
-              <p>{order.restaurante?.tipo_cozinha}</p>
-              {order.restaurante?.telefone && (
-                <p>📞 {order.restaurante.telefone}</p>
+        {/* Endereço de Entrega */}
+        <section className="detail-section">
+          <h2>Endereço de Entrega</h2>
+          <div className="address-info">
+            <p>
+              {order.endereco_logradouro}, {order.endereco_numero}
+              {order.endereco_complemento && ` - ${order.endereco_complemento}`}
+            </p>
+            <p>{order.endereco_bairro}</p>
+            <p>{order.endereco_cidade} - {order.endereco_estado}</p>
+            <p>CEP: {order.endereco_cep}</p>
+          </div>
+        </section>
+
+        {/* Forma de Pagamento */}
+        <section className="detail-section">
+          <h2>Forma de Pagamento</h2>
+          <div className="payment-info">
+            {order.forma_pagamento === 'dinheiro' && '💵 Dinheiro'}
+            {order.forma_pagamento === 'cartao' && '💳 Cartão'}
+            {order.forma_pagamento === 'pix' && '🔲 PIX'}
+          </div>
+        </section>
+
+        {/* Entregador */}
+        {order.entregador_nome && (
+          <section className="detail-section">
+            <h2>Entregador</h2>
+            <div className="delivery-info">
+              <p><strong>{order.entregador_nome}</strong></p>
+              {order.entregador_telefone && (
+                <p>📞 {order.entregador_telefone}</p>
               )}
             </div>
           </section>
-
-          {/* Itens do Pedido */}
-          <section className="order-section">
-            <h2>Itens do Pedido</h2>
-            <div className="order-items">
-              {order.itens?.map((item, index) => (
-                <div key={index} className="order-item">
-                  <div className="item-info">
-                    <span className="item-quantity">{item.quantidade}x</span>
-                    <span className="item-name">{item.nome_item}</span>
-                  </div>
-                  <span className="item-price">
-                    R$ {(Number(item.preco_unitario_gravado || item.preco_unitario || 0) * item.quantidade).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="order-totals">
-              <div className="total-row">
-                <span>Subtotal</span>
-                <span>R$ {subtotal.toFixed(2)}</span>
-              </div>
-              <div className="total-row">
-                <span>Taxa de entrega</span>
-                <span>R$ {deliveryFee.toFixed(2)}</span>
-              </div>
-              <div className="total-row final">
-                <strong>Total</strong>
-                <strong>R$ {total.toFixed(2)}</strong>
-              </div>
-            </div>
-          </section>
-
-          {/* Endereço de Entrega */}
-          <section className="order-section">
-            <h2>Endereço de Entrega</h2>
-            <div className="address-card">
-              <p>
-                {order.endereco_entrega?.logradouro}, {order.endereco_entrega?.numero}
-                {order.endereco_entrega?.complemento && ` - ${order.endereco_entrega.complemento}`}
-              </p>
-              <p>
-                {order.endereco_entrega?.bairro}, {order.endereco_entrega?.cidade} -{' '}
-                {order.endereco_entrega?.estado}
-              </p>
-              <p>CEP: {order.endereco_entrega?.cep}</p>
-            </div>
-          </section>
-
-          {/* Forma de Pagamento */}
-          <section className="order-section">
-            <h2>Forma de Pagamento</h2>
-            <div className="payment-card">
-              {order.metodo_pagamento === 'Dinheiro' && '💵 '}
-              {order.metodo_pagamento === 'Cartão de Crédito' && '💳 '}
-              {order.metodo_pagamento === 'Cartão de Débito' && '💳 '}
-              {order.metodo_pagamento === 'PIX' && '📱 '}
-              {order.metodo_pagamento}
-            </div>
-          </section>
-
-          {/* Ações do Pedido */}
-          <div className="order-actions-detail">
-            {statusKey === 'pendente' && (
-              <button 
-                className="btn-danger-outline"
-                onClick={handleCancel}
-              >
-                Cancelar Pedido
-              </button>
-            )}
-
-            {statusKey !== 'entregue' && statusKey !== 'cancelado' && (
-              <button 
-                className="btn-success"
-                onClick={handleConfirmDelivery}
-              >
-                Confirmar Entrega
-              </button>
-            )}
-
-            {statusKey === 'entregue' && !order.avaliacao && (
-              <button
-                className="btn-primary btn-review"
-                onClick={() => navigate(`/orders/${id}/review`)}
-              >
-                ⭐ Avaliar Pedido
-              </button>
-            )}
-          </div>
-
-          {order.avaliacao && (
-            <div className="review-completed">
-              <span className="check-icon">✅</span>
-              <p>Você já avaliou este pedido</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
+
+      {order.status === 'entregue' && (
+        <div className="review-section">
+          <button 
+            className="btn-primary"
+            onClick={() => navigate(`/orders/${order.id}/review`)}
+          >
+            ⭐ Avaliar Pedido
+          </button>
+        </div>
+      )}
     </div>
   );
 }

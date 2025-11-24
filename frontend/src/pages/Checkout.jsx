@@ -2,273 +2,394 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useToast } from '../context/ToastContext';
-import api from '../services/api';
+import { getClientAddresses, createAddress, createOrder } from '../services/orderService';
 import Loading from '../components/Loading';
 import './Checkout.css';
 
 function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cart, restaurantId, restaurantName, getCartTotal, clearCart, loading: cartLoading } = useCart();
-  const toast = useToast();
-
+  const { items, restaurant, getTotal, getTotalWithDelivery, clearCart } = useCart();
+  
   const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [newAddress, setNewAddress] = useState({
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: ''
+  });
 
   useEffect(() => {
-    if (cartLoading || orderPlaced) return;
-
-    if (cart.length === 0) {
-      // Only redirect if we are sure cart is empty and not loading
-      toast.warning('Seu carrinho está vazio');
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    if (items.length === 0) {
       navigate('/restaurants');
       return;
     }
+    
+    fetchAddresses();
+  }, []);
 
-    const fetchData = async () => {
-      try {
-        const [addressResponse, restaurantResponse] = await Promise.all([
-          api.get('/clientes/enderecos'),
-          api.get(`/restaurantes/${restaurantId}`)
-        ]);
-
-        const addressesData = addressResponse.data.data || [];
-        setAddresses(addressesData);
-        
-        if (addressesData.length > 0) {
-          setSelectedAddress(addressesData[0].id_endereco_cliente.toString());
-        }
-
-        if (restaurantResponse.data) {
-          setDeliveryFee(Number(restaurantResponse.data.taxa_entrega));
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        toast.error('Erro ao carregar dados do pedido');
-      } finally {
-        setLoading(false);
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true);
+      const data = await getClientAddresses();
+      setAddresses(data);
+      if (data.length > 0) {
+        setSelectedAddress(data[0].id);
+      } else {
+        setShowAddressForm(true);
       }
-    };
+    } catch (err) {
+      setError('Erro ao carregar endereços');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
-  }, [cartLoading, cart.length, restaurantId]);
+  const handleAddressInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewAddress(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleSubmit = async (e) => {
+  const handleAddAddress = async (e) => {
     e.preventDefault();
+    try {
+      const address = await createAddress(newAddress);
+      setAddresses(prev => [...prev, address]);
+      setSelectedAddress(address.id);
+      setShowAddressForm(false);
+      setNewAddress({
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: ''
+      });
+    } catch (err) {
+      setError('Erro ao adicionar endereço');
+      console.error(err);
+    }
+  };
 
+  const handleSubmitOrder = async () => {
     if (!selectedAddress) {
-      toast.warning('Selecione um endereço de entrega');
+      setError('Selecione um endereço de entrega');
       return;
     }
-
+    
     if (!paymentMethod) {
-      toast.warning('Selecione uma forma de pagamento');
+      setError('Selecione uma forma de pagamento');
       return;
     }
-
-    setSubmitting(true);
-
-    const paymentMethodMap = {
-      'dinheiro': 'Dinheiro',
-      'cartao_credito': 'Cartão de Crédito',
-      'cartao_debito': 'Cartão de Débito',
-      'pix': 'PIX'
-    };
 
     try {
+      setSubmitting(true);
+      setError('');
+
       const orderData = {
-        id_restaurante: restaurantId,
-        id_endereco_cliente: parseInt(selectedAddress),
-        metodo_pagamento: paymentMethodMap[paymentMethod],
-        itens: cart.map(item => ({
-          id_item_cardapio: item.id_item,
-          quantidade: item.quantidade
+        restaurante_id: restaurant.id,
+        endereco_cliente_id: selectedAddress,
+        forma_pagamento: paymentMethod,
+        itens: items.map(item => ({
+          item_cardapio_id: item.id,
+          quantidade: item.quantity,
+          preco_unitario: item.preco
         }))
       };
 
-      const response = await api.post('/pedidos/cliente', orderData);
-      
-      setOrderPlaced(true);
-      toast.success('Pedido realizado com sucesso!');
+      await createOrder(orderData);
       clearCart();
-      navigate(`/orders/${response.data.pedido.id_pedido}`);
-    } catch (error) {
-      console.error('Erro ao criar pedido:', error);
-      toast.error(error.response?.data?.message || 'Erro ao criar pedido');
+      navigate('/orders', { state: { message: 'Pedido realizado com sucesso!' } });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao realizar pedido');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading || cartLoading) {
-    return <Loading />;
+  if (loading) {
+    return <Loading message="Carregando checkout..." />;
   }
 
-  const subtotal = getCartTotal();
-  const total = subtotal + deliveryFee;
+  const selectedAddressData = addresses.find(addr => addr.id === selectedAddress);
 
   return (
-    <div className="checkout-page">
-      <div className="checkout-container">
+    <div className="checkout-container">
+      <div className="checkout-header">
+        <button className="btn-back" onClick={() => navigate(-1)}>
+          ← Voltar
+        </button>
         <h1>Finalizar Pedido</h1>
+      </div>
 
-        <div className="checkout-grid">
-          <div className="checkout-form">
-            <form onSubmit={handleSubmit}>
-              {/* Endereço */}
-              <section className="checkout-section">
-                <h2>Endereço de Entrega</h2>
-                
-                {addresses.length === 0 ? (
-                  <div className="no-addresses">
-                    <p>Você ainda não tem endereços cadastrados.</p>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => navigate('/profile')}
-                    >
-                      Cadastrar Endereço
-                    </button>
-                  </div>
-                ) : (
-                  <div className="address-list">
-                    {addresses.map((address) => (
-                      <label
-                        key={address.id_endereco_cliente}
-                        className={`address-option ${
-                          selectedAddress === address.id_endereco_cliente.toString()
-                            ? 'selected'
-                            : ''
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="address"
-                          value={address.id_endereco_cliente}
-                          checked={selectedAddress === address.id_endereco_cliente.toString()}
-                          onChange={(e) => setSelectedAddress(e.target.value)}
-                        />
-                        <div className="address-info">
-                          <strong>{address.nome_identificador || 'Endereço'}</strong>
-                          <p>
-                            {address.logradouro}, {address.numero}
-                            {address.complemento && ` - ${address.complemento}`}
-                          </p>
-                          <p>
-                            {address.bairro}, {address.cidade} - {address.estado}
-                          </p>
-                          <p>CEP: {address.cep}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </section>
+      {error && <div className="error-message">{error}</div>}
 
-              {/* Forma de Pagamento */}
-              <section className="checkout-section">
-                <h2>Forma de Pagamento</h2>
-                <div className="payment-methods">
-                  <label className={`payment-option ${paymentMethod === 'dinheiro' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="dinheiro"
-                      checked={paymentMethod === 'dinheiro'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>💵 Dinheiro</span>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'cartao_credito' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cartao_credito"
-                      checked={paymentMethod === 'cartao_credito'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>💳 Cartão de Crédito</span>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'cartao_debito' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cartao_debito"
-                      checked={paymentMethod === 'cartao_debito'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>💳 Cartão de Débito</span>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'pix' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="pix"
-                      checked={paymentMethod === 'pix'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>📱 PIX</span>
-                  </label>
-                </div>
-              </section>
-
-              <button
-                type="submit"
-                className="btn-primary btn-submit"
-                disabled={submitting || addresses.length === 0}
-              >
-                {submitting ? 'Finalizando...' : `Finalizar Pedido - R$ ${total.toFixed(2)}`}
-              </button>
-            </form>
-          </div>
-
-          {/* Resumo do Pedido */}
-          <div className="order-summary">
-            <h2>Resumo do Pedido</h2>
+      <div className="checkout-content">
+        <div className="checkout-main">
+          {/* Endereço de Entrega */}
+          <section className="checkout-section">
+            <h2>Endereço de Entrega</h2>
             
-            <div className="restaurant-info">
-              <strong>{restaurantName}</strong>
-            </div>
-
-            <div className="cart-items">
-              {cart.map((item) => (
-                <div key={item.id_item} className="cart-item-summary">
-                  <div className="item-details">
-                    <span className="item-qty">{item.quantidade}x</span>
-                    <span className="item-name">{item.nome}</span>
-                  </div>
-                  <span className="item-price">
-                    R$ {(item.preco * item.quantidade).toFixed(2)}
-                  </span>
+            {addresses.length > 0 && !showAddressForm && (
+              <>
+                <div className="address-list">
+                  {addresses.map(address => (
+                    <label key={address.id} className="address-option">
+                      <input
+                        type="radio"
+                        name="address"
+                        value={address.id}
+                        checked={selectedAddress === address.id}
+                        onChange={() => setSelectedAddress(address.id)}
+                      />
+                      <div className="address-details">
+                        <strong>{address.logradouro}, {address.numero}</strong>
+                        {address.complemento && <span> - {address.complemento}</span>}
+                        <br />
+                        <span>{address.bairro}, {address.cidade} - {address.estado}</span>
+                        <br />
+                        <span>CEP: {address.cep}</span>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => setShowAddressForm(true)}
+                >
+                  + Adicionar novo endereço
+                </button>
+              </>
+            )}
 
-            <div className="summary-totals">
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>R$ {subtotal.toFixed(2)}</span>
+            {showAddressForm && (
+              <form onSubmit={handleAddAddress} className="address-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>CEP *</label>
+                    <input
+                      type="text"
+                      name="cep"
+                      value={newAddress.cep}
+                      onChange={handleAddressInputChange}
+                      required
+                      maxLength="9"
+                      placeholder="00000-000"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Logradouro *</label>
+                    <input
+                      type="text"
+                      name="logradouro"
+                      value={newAddress.logradouro}
+                      onChange={handleAddressInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Número *</label>
+                    <input
+                      type="text"
+                      name="numero"
+                      value={newAddress.numero}
+                      onChange={handleAddressInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Complemento</label>
+                    <input
+                      type="text"
+                      name="complemento"
+                      value={newAddress.complemento}
+                      onChange={handleAddressInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Bairro *</label>
+                    <input
+                      type="text"
+                      name="bairro"
+                      value={newAddress.bairro}
+                      onChange={handleAddressInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Cidade *</label>
+                    <input
+                      type="text"
+                      name="cidade"
+                      value={newAddress.cidade}
+                      onChange={handleAddressInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Estado *</label>
+                  <input
+                    type="text"
+                    name="estado"
+                    value={newAddress.estado}
+                    onChange={handleAddressInputChange}
+                    required
+                    maxLength="2"
+                    placeholder="SP"
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="btn-primary">
+                    Salvar Endereço
+                  </button>
+                  {addresses.length > 0 && (
+                    <button 
+                      type="button" 
+                      className="btn-secondary"
+                      onClick={() => setShowAddressForm(false)}
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+          </section>
+
+          {/* Forma de Pagamento */}
+          <section className="checkout-section">
+            <h2>Forma de Pagamento</h2>
+            <div className="payment-options">
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="dinheiro"
+                  checked={paymentMethod === 'dinheiro'}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <div className="payment-details">
+                  <strong>💵 Dinheiro</strong>
+                  <span>Pagar na entrega</span>
+                </div>
+              </label>
+
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cartao"
+                  checked={paymentMethod === 'cartao'}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <div className="payment-details">
+                  <strong>💳 Cartão</strong>
+                  <span>Débito ou crédito na entrega</span>
+                </div>
+              </label>
+
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="pix"
+                  checked={paymentMethod === 'pix'}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <div className="payment-details">
+                  <strong>🔲 PIX</strong>
+                  <span>Pagamento instantâneo</span>
+                </div>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        {/* Resumo do Pedido */}
+        <aside className="order-summary">
+          <h2>Resumo do Pedido</h2>
+          
+          {restaurant && (
+            <div className="summary-restaurant">
+              <strong>{restaurant.nome}</strong>
+              <span>⏱️ {restaurant.tempo_entrega_estimado} min</span>
+            </div>
+          )}
+
+          <div className="summary-items">
+            {items.map(item => (
+              <div key={item.id} className="summary-item">
+                <div>
+                  <span className="item-qty">{item.quantity}x</span>
+                  <span className="item-name">{item.nome}</span>
+                </div>
+                <span className="item-price">
+                  R$ {(parseFloat(item.preco) * item.quantity).toFixed(2)}
+                </span>
               </div>
-              <div className="summary-row">
-                <span>Taxa de entrega</span>
-                <span>R$ {deliveryFee.toFixed(2)}</span>
-              </div>
-              <div className="summary-row total">
-                <strong>Total</strong>
-                <strong>R$ {total.toFixed(2)}</strong>
-              </div>
+            ))}
+          </div>
+
+          <div className="summary-totals">
+            <div className="summary-row">
+              <span>Subtotal</span>
+              <span>R$ {getTotal().toFixed(2)}</span>
+            </div>
+            <div className="summary-row">
+              <span>Taxa de entrega</span>
+              <span>R$ {parseFloat(restaurant?.taxa_entrega || 0).toFixed(2)}</span>
+            </div>
+            <div className="summary-row total">
+              <strong>Total</strong>
+              <strong>R$ {getTotalWithDelivery().toFixed(2)}</strong>
             </div>
           </div>
-        </div>
+
+          {selectedAddressData && (
+            <div className="summary-delivery">
+              <strong>📍 Entregar em:</strong>
+              <p>
+                {selectedAddressData.logradouro}, {selectedAddressData.numero}
+                {selectedAddressData.complemento && ` - ${selectedAddressData.complemento}`}
+              </p>
+            </div>
+          )}
+
+          <button 
+            className="btn-finish-order"
+            onClick={handleSubmitOrder}
+            disabled={submitting || !selectedAddress || !paymentMethod}
+          >
+            {submitting ? 'Finalizando...' : 'Finalizar Pedido'}
+          </button>
+        </aside>
       </div>
     </div>
   );
