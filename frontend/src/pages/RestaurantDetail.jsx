@@ -121,6 +121,17 @@ function RestaurantDetail() {
             <span className="detail-label">🚚 Taxa de entrega:</span>
             <span>R$ {parseFloat(restaurant.taxa_entrega).toFixed(2)}</span>
           </div>
+          {restaurant.endereco && (
+            <div className="detail-item full-width">
+              <span className="detail-label">📍 Endereço:</span>
+              <span>
+                {restaurant.endereco.logradouro}, {restaurant.endereco.numero}
+                {restaurant.endereco.complemento && ` - ${restaurant.endereco.complemento}`}
+                <br />
+                {restaurant.endereco.bairro}, {restaurant.endereco.cidade} - {restaurant.endereco.estado}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

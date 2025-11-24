@@ -331,6 +331,8 @@ function AdminDeliverers() {
 
         {deleteId && (
           <ConfirmDialog
+            isOpen={true}
+            title="Confirmar Exclusão"
             message="Tem certeza que deseja excluir este entregador?"
             onConfirm={handleDelete}
             onCancel={() => setDeleteId(null)}

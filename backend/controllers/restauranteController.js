@@ -91,8 +91,9 @@ class RestauranteController {
   // Obter detalhes de um restaurante específico (público)
   async getById(req, res, next) {
     try {
-      const restaurante = await restauranteService.getById(req.params.id);
-      res.json(restaurante);
+      const data = await restauranteService.getRestauranteCompleto(req.params.id);
+      // Retorna os dados do restaurante com o endereço aninhado ou null
+      res.json({ ...data.restaurante, endereco: data.endereco });
     } catch (error) {
       next(error);
     }

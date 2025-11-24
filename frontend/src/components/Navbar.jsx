@@ -29,6 +29,7 @@ function Navbar() {
     { label: '🏪 Meu Restaurante', icon: '🏪', to: '/admin/restaurant' },
     { label: '📋 Cardápio', icon: '📋', to: '/admin/menu' },
     { label: '📦 Pedidos', icon: '📦', to: '/admin/orders' },
+    { label: '🛵 Entregadores', icon: '🛵', to: '/admin/deliverers' },
   ];
 
   const closeMobileMenu = () => {

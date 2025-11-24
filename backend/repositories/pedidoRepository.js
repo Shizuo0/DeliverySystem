@@ -76,10 +76,19 @@ class PedidoRepository {
       SELECT 
         p.*,
         c.nome as cliente_nome,
-        e.nome as entregador_nome
+        c.telefone as cliente_telefone,
+        e.nome as entregador_nome,
+        ec.logradouro as end_logradouro,
+        ec.numero as end_numero,
+        ec.complemento as end_complemento,
+        ec.bairro as end_bairro,
+        ec.cidade as end_cidade,
+        ec.estado as end_estado,
+        ec.cep as end_cep
       FROM Pedidos p
       LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
       LEFT JOIN Entregadores e ON p.id_entregador = e.id_entregador
+      LEFT JOIN EnderecosClientes ec ON p.id_endereco_cliente = ec.id_endereco_cliente
       WHERE p.id_restaurante = ?
       ORDER BY p.data_hora DESC
     `;
@@ -93,10 +102,19 @@ class PedidoRepository {
       SELECT 
         p.*,
         c.nome as cliente_nome,
-        e.nome as entregador_nome
+        c.telefone as cliente_telefone,
+        e.nome as entregador_nome,
+        ec.logradouro as end_logradouro,
+        ec.numero as end_numero,
+        ec.complemento as end_complemento,
+        ec.bairro as end_bairro,
+        ec.cidade as end_cidade,
+        ec.estado as end_estado,
+        ec.cep as end_cep
       FROM Pedidos p
       LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
       LEFT JOIN Entregadores e ON p.id_entregador = e.id_entregador
+      LEFT JOIN EnderecosClientes ec ON p.id_endereco_cliente = ec.id_endereco_cliente
       WHERE p.id_restaurante = ? AND p.status = ?
       ORDER BY p.data_hora DESC
     `;

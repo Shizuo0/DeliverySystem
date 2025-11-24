@@ -81,6 +81,13 @@
   font-size: 0.9rem;
 }
 
+.detail-item.full-width {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border-color);
+}
+
 .warning-message {
   background-color: #FFF3E0;
   color: #E65100;

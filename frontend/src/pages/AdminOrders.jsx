@@ -34,7 +34,7 @@ function AdminOrders() {
 
   const loadOrders = async () => {
     try {
-      const response = await api.get('/restaurantes/pedidos');
+      const response = await api.get('/pedidos/restaurante');
       setOrders(response.data);
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
@@ -249,7 +249,7 @@ function AdminOrders() {
                   <div className="order-id">
                     <strong>Pedido #{order.id_pedido}</strong>
                     <span className="order-time">
-                      {new Date(order.criado_em).toLocaleString('pt-BR')}
+                      {new Date(order.data_hora).toLocaleString('pt-BR')}
                     </span>
                   </div>
                   <span className={`status-badge ${getStatusClass(order.status)}`}>
@@ -289,10 +289,12 @@ function AdminOrders() {
 
                   <div className="order-payment">
                     <strong>Pagamento:</strong>{' '}
-                    {order.metodo_pagamento === 'dinheiro' && 'Dinheiro'}
-                    {order.metodo_pagamento === 'cartao_credito' && 'Cartão de Crédito'}
-                    {order.metodo_pagamento === 'cartao_debito' && 'Cartão de Débito'}
-                    {order.metodo_pagamento === 'pix' && 'PIX'}
+                    {{
+                      'dinheiro': 'Dinheiro',
+                      'cartao_credito': 'Cartão de Crédito',
+                      'cartao_debito': 'Cartão de Débito',
+                      'pix': 'PIX'
+                    }[order.metodo_pagamento] || order.metodo_pagamento}
                     {' | '}
                     <strong>Total: R$ {Number(order.valor_total || order.total).toFixed(2)}</strong>
                   </div>

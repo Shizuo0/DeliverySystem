@@ -28,6 +28,27 @@ export const updateRestaurantStatus = async (status) => {
   return response.data;
 };
 
+// Admin - Endereço
+export const getRestaurantAddress = async () => {
+  const response = await api.get('/restaurantes/endereco');
+  return response.data;
+};
+
+export const createRestaurantAddress = async (data) => {
+  const response = await api.post('/restaurantes/endereco', data);
+  return response.data;
+};
+
+export const updateRestaurantAddress = async (data) => {
+  const response = await api.put('/restaurantes/endereco', data);
+  return response.data;
+};
+
+export const deleteRestaurantAddress = async () => {
+  const response = await api.delete('/restaurantes/endereco');
+  return response.data;
+};
+
 // Admin - Categorias
 export const getCategorias = async () => {
   const response = await api.get('/restaurantes/categorias');
