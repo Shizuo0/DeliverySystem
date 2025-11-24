@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../services/restaurantService';
-import { useCart } from '../context/CartContext';
 import Loading from '../components/Loading';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import './RestaurantDetail.css';
 
 function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const toast = useToast();
   const [restaurant, setRestaurant] = useState(null);
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +31,7 @@ function RestaurantDetail() {
         getRestaurantMenu(id)
       ]);
       setRestaurant(restaurantData);
-      setMenu(menuData);
+      setMenu(menuData.cardapio || []);
     } catch (err) {
       setError('Erro ao carregar dados do restaurante');
       console.error(err);
@@ -36,29 +40,31 @@ function RestaurantDetail() {
     }
   };
 
-  const groupedMenu = menu.reduce((acc, item) => {
-    const categoria = item.categoria_nome || 'Sem categoria';
-    if (!acc[categoria]) {
-      acc[categoria] = [];
-    }
-    acc[categoria].push(item);
-    return acc;
-  }, {});
-
-  const categories = Object.keys(groupedMenu);
-
-  const filteredMenu = selectedCategory === 'all' 
-    ? menu 
-    : groupedMenu[selectedCategory] || [];
+  const categories = menu.map(cat => cat.nome_categoria);
 
   const handleAddItem = (item) => {
-    addItem(
-      item,
+    if (!user) {
+      toast.info('Faça login para adicionar itens ao carrinho');
+      navigate('/login');
+      return;
+    }
+
+    if (user.tipo !== 'cliente') {
+      toast.warning('Apenas clientes podem criar pedidos.');
+      return;
+    }
+
+    addToCart(
       {
-        id: restaurant.id,
+        id_item: item.id_item || item.id_item_cardapio || item.id,
+        nome: item.nome,
+        descricao: item.descricao,
+        preco: Number(item.preco),
+      },
+      {
+        id: restaurant.id || restaurant.id_restaurante,
         nome: restaurant.nome,
-        taxa_entrega: restaurant.taxa_entrega,
-        tempo_entrega_estimado: restaurant.tempo_entrega_estimado
+        taxa_entrega: restaurant.taxa_entrega
       }
     );
   };
@@ -85,7 +91,7 @@ function RestaurantDetail() {
     );
   }
 
-  const isOpen = restaurant.aberto;
+  const isOpen = restaurant.status_operacional === 'Aberto';
 
   return (
     <div className="restaurant-detail">
@@ -115,6 +121,17 @@ function RestaurantDetail() {
             <span className="detail-label">🚚 Taxa de entrega:</span>
             <span>R$ {parseFloat(restaurant.taxa_entrega).toFixed(2)}</span>
           </div>
+          {restaurant.endereco && (
+            <div className="detail-item full-width">
+              <span className="detail-label">📍 Endereço:</span>
+              <span>
+                {restaurant.endereco.logradouro}, {restaurant.endereco.numero}
+                {restaurant.endereco.complemento && ` - ${restaurant.endereco.complemento}`}
+                <br />
+                {restaurant.endereco.bairro}, {restaurant.endereco.cidade} - {restaurant.endereco.estado}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -129,32 +146,31 @@ function RestaurantDetail() {
         
         {categories.length > 1 && (
           <div className="category-filter">
-            <button 
-              className={selectedCategory === 'all' ? 'active' : ''}
-              onClick={() => setSelectedCategory('all')}
+            <label htmlFor="category-select" className="sr-only">Filtrar por categoria:</label>
+            <select
+              id="category-select"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="category-select"
             >
-              Todos
-            </button>
-            {categories.map(category => (
-              <button
-                key={category}
-                className={selectedCategory === category ? 'active' : ''}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
+              <option value="all">Todas as categorias</option>
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
         {selectedCategory === 'all' ? (
-          categories.map(category => (
-            <div key={category} className="category-section">
-              <h3 className="category-title">{category}</h3>
+          menu.map(category => (
+            <div key={category.id_categoria} className="category-section">
+              <h3 className="category-title">{category.nome_categoria}</h3>
               <div className="menu-items">
-                {groupedMenu[category].map(item => (
+                {category.itens.map(item => (
                   <div 
-                    key={item.id} 
+                    key={item.id || item.id_item_cardapio} 
                     className={`menu-item ${!item.disponivel ? 'unavailable' : ''}`}
                   >
                     <div className="menu-item-info">
@@ -168,10 +184,7 @@ function RestaurantDetail() {
                       <div className="unavailable-badge">Indisponível</div>
                     )}
                     {item.disponivel && isOpen && (
-                      <button 
-                        className="btn-add-item"
-                        onClick={() => handleAddItem(item)}
-                      >
+                      <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                         Adicionar
                       </button>
                     )}
@@ -182,9 +195,9 @@ function RestaurantDetail() {
           ))
         ) : (
           <div className="menu-items">
-            {filteredMenu.map(item => (
+            {menu.find(c => c.nome_categoria === selectedCategory)?.itens.map(item => (
               <div 
-                key={item.id} 
+                key={item.id || item.id_item_cardapio}  
                 className={`menu-item ${!item.disponivel ? 'unavailable' : ''}`}
               >
                 <div className="menu-item-info">
@@ -198,10 +211,7 @@ function RestaurantDetail() {
                   <div className="unavailable-badge">Indisponível</div>
                 )}
                 {item.disponivel && isOpen && (
-                  <button 
-                    className="btn-add-item"
-                    onClick={() => handleAddItem(item)}
-                  >
+                  <button className="btn-add-item" type="button" onClick={() => handleAddItem(item)}>
                     Adicionar
                   </button>
                 )}

@@ -8,10 +8,10 @@
 }
 
 .loading-spinner-icon {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--border-color);
-  border-top-color: var(--primary-red);
+  width: 50px;
+  height: 50px;
+  border: 4px solid #E8E8E8;
+  border-top-color: #EA1D2C;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -25,4 +25,44 @@
 .loading-container p {
   color: var(--text-light);
   font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 60%;
+  margin-bottom: 12px;
+}
+
+.skeleton-card {
+  height: 200px;
+  margin-bottom: 16px;
 }

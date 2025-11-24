@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getRestaurantById, updateRestaurant, toggleRestaurantStatus } from '../services/restaurantService';
+import { 
+  getRestaurantById, 
+  updateRestaurant, 
+  updateRestaurantStatus,
+  getRestaurantAddress,
+  createRestaurantAddress,
+  updateRestaurantAddress
+} from '../services/restaurantService';
 import { formatPhone, removeFormatting, isValidPhone } from '../utils/formatters';
 import Loading from '../components/Loading';
 import './AdminRestaurant.css';
@@ -8,10 +15,13 @@ import './AdminRestaurant.css';
 function AdminRestaurant() {
   const { user } = useAuth();
   const [restaurant, setRestaurant] = useState(null);
+  const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Restaurant Profile State
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
@@ -20,26 +30,60 @@ function AdminRestaurant() {
     tempo_entrega_estimado: '',
     taxa_entrega: ''
   });
+  
+  // Address State
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: ''
+  });
+
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    if (user?.restaurante_id) {
-      fetchRestaurant();
+    if (user?.id_restaurante) {
+      fetchData();
+    } else if (user && !user.id_restaurante) {
+      // If user is loaded but no restaurant ID, stop loading
+      setLoading(false);
+      setError('ID do restaurante não encontrado no perfil do usuário.');
     }
   }, [user]);
 
-  const fetchRestaurant = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await getRestaurantById(user.restaurante_id);
-      setRestaurant(data);
+      const [restaurantData, addressData] = await Promise.all([
+        getRestaurantById(user.id_restaurante),
+        getRestaurantAddress().catch(() => null) // Address might not exist yet
+      ]);
+      
+      setRestaurant(restaurantData);
       setFormData({
-        nome: data.nome || '',
-        descricao: data.descricao || '',
-        telefone: data.telefone || '',
-        tempo_entrega_estimado: data.tempo_entrega_estimado || '',
-        taxa_entrega: data.taxa_entrega || ''
+        nome: restaurantData.nome || '',
+        descricao: restaurantData.descricao || '',
+        telefone: restaurantData.telefone || '',
+        tempo_entrega_estimado: restaurantData.tempo_entrega_estimado || '',
+        taxa_entrega: restaurantData.taxa_entrega || ''
       });
+
+      if (addressData) {
+        setAddress(addressData);
+        setAddressForm({
+          logradouro: addressData.logradouro || '',
+          numero: addressData.numero || '',
+          complemento: addressData.complemento || '',
+          bairro: addressData.bairro || '',
+          cidade: addressData.cidade || '',
+          estado: addressData.estado || '',
+          cep: addressData.cep || ''
+        });
+      }
     } catch (err) {
       setError('Erro ao carregar dados do restaurante');
       console.error(err);
@@ -67,6 +111,14 @@ function AdminRestaurant() {
         [name]: ''
       });
     }
+  };
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setAddressForm({
+      ...addressForm,
+      [name]: value
+    });
   };
 
   const validateForm = () => {
@@ -103,9 +155,29 @@ function AdminRestaurant() {
     setError('');
     setSuccess('');
     setFormData({
-      ...formData,
-      telefone: formatPhone(restaurant.telefone || '')
+      nome: restaurant.nome || '',
+      descricao: restaurant.descricao || '',
+      telefone: formatPhone(restaurant.telefone || ''),
+      tempo_entrega_estimado: restaurant.tempo_entrega_estimado || '',
+      taxa_entrega: restaurant.taxa_entrega || ''
     });
+  };
+
+  const handleEditAddress = () => {
+    if (address) {
+      setAddressForm({
+        logradouro: address.logradouro || '',
+        numero: address.numero || '',
+        complemento: address.complemento || '',
+        bairro: address.bairro || '',
+        cidade: address.cidade || '',
+        estado: address.estado || '',
+        cep: address.cep || ''
+      });
+    }
+    setIsEditingAddress(true);
+    setError('');
+    setSuccess('');
   };
 
   const handleCancel = () => {
@@ -120,6 +192,33 @@ function AdminRestaurant() {
       tempo_entrega_estimado: restaurant.tempo_entrega_estimado || '',
       taxa_entrega: restaurant.taxa_entrega || ''
     });
+  };
+
+  const handleCancelAddress = () => {
+    setIsEditingAddress(false);
+    setError('');
+    setSuccess('');
+    if (address) {
+      setAddressForm({
+        logradouro: address.logradouro || '',
+        numero: address.numero || '',
+        complemento: address.complemento || '',
+        bairro: address.bairro || '',
+        cidade: address.cidade || '',
+        estado: address.estado || '',
+        cep: address.cep || ''
+      });
+    } else {
+      setAddressForm({
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: ''
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -142,7 +241,7 @@ function AdminRestaurant() {
       };
 
       const updated = await updateRestaurant(dataToSend);
-      setRestaurant(updated);
+      setRestaurant(updated.restaurante);
       setSuccess('Informações atualizadas com sucesso!');
       setIsEditing(false);
 
@@ -154,12 +253,39 @@ function AdminRestaurant() {
     }
   };
 
+  const handleSaveAddress = async () => {
+    setError('');
+    setSuccess('');
+    setSaving(true);
+
+    try {
+      let response;
+      if (address) {
+        response = await updateRestaurantAddress(addressForm);
+      } else {
+        response = await createRestaurantAddress(addressForm);
+      }
+      
+      // The API returns { message, endereco }
+      setAddress(response.endereco);
+      setSuccess('Endereço atualizado com sucesso!');
+      setIsEditingAddress(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erro ao salvar endereço');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleToggleStatus = async () => {
     try {
       setSaving(true);
-      const updated = await toggleRestaurantStatus();
-      setRestaurant(updated);
-      setSuccess(`Restaurante ${updated.aberto ? 'aberto' : 'fechado'} com sucesso!`);
+      const newStatus = restaurant.status_operacional === 'Aberto' ? 'Fechado' : 'Aberto';
+      const response = await updateRestaurantStatus(newStatus);
+      // The backend returns { message, restaurante }
+      setRestaurant(response.restaurante);
+      setSuccess(`Restaurante ${newStatus === 'Aberto' ? 'aberto' : 'fechado'} com sucesso!`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao alterar status');
@@ -180,6 +306,8 @@ function AdminRestaurant() {
     );
   }
 
+  const isOpen = restaurant.status_operacional === 'Aberto';
+
   return (
     <div className="admin-restaurant">
       <div className="page-header">
@@ -188,9 +316,9 @@ function AdminRestaurant() {
           <button 
             onClick={handleToggleStatus}
             disabled={saving}
-            className={`btn-toggle-status ${restaurant.aberto ? 'open' : 'closed'}`}
+            className={`btn-toggle-status ${isOpen ? 'open' : 'closed'}`}
           >
-            {restaurant.aberto ? '🟢 Aberto' : '🔴 Fechado'}
+            {isOpen ? '🟢 Aberto' : '🔴 Fechado'}
           </button>
           {!isEditing && (
             <button onClick={handleEdit} className="btn-secondary">
@@ -318,10 +446,159 @@ function AdminRestaurant() {
             </div>
             <div className="info-field">
               <strong>Status:</strong>
-              <span className={restaurant.aberto ? 'status-open' : 'status-closed'}>
-                {restaurant.aberto ? 'Aberto' : 'Fechado'}
+              <span className={isOpen ? 'status-open' : 'status-closed'}>
+                {isOpen ? 'Aberto' : 'Fechado'}
               </span>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="page-header" style={{ marginTop: '2rem' }}>
+        <h2>Endereço</h2>
+        {!isEditingAddress && (
+          <button onClick={handleEditAddress} className="btn-secondary">
+            {address ? 'Editar Endereço' : 'Adicionar Endereço'}
+          </button>
+        )}
+      </div>
+
+      <div className="restaurant-info-card">
+        {isEditingAddress ? (
+          <div className="edit-form">
+            <div className="form-row">
+              <div className="form-group" style={{ flex: 3 }}>
+                <label htmlFor="logradouro">Logradouro</label>
+                <input
+                  type="text"
+                  id="logradouro"
+                  name="logradouro"
+                  value={addressForm.logradouro}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                  placeholder="Rua, Avenida, etc."
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="numero">Número</label>
+                <input
+                  type="text"
+                  id="numero"
+                  name="numero"
+                  value={addressForm.numero}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="complemento">Complemento</label>
+              <input
+                type="text"
+                id="complemento"
+                name="complemento"
+                value={addressForm.complemento}
+                onChange={handleAddressChange}
+                disabled={saving}
+                placeholder="Apto, Bloco, etc."
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="bairro">Bairro</label>
+                <input
+                  type="text"
+                  id="bairro"
+                  name="bairro"
+                  value={addressForm.bairro}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="cep">CEP</label>
+                <input
+                  type="text"
+                  id="cep"
+                  name="cep"
+                  value={addressForm.cep}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                  placeholder="00000-000"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group" style={{ flex: 3 }}>
+                <label htmlFor="cidade">Cidade</label>
+                <input
+                  type="text"
+                  id="cidade"
+                  name="cidade"
+                  value={addressForm.cidade}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="estado">Estado</label>
+                <input
+                  type="text"
+                  id="estado"
+                  name="estado"
+                  value={addressForm.estado}
+                  onChange={handleAddressChange}
+                  disabled={saving}
+                  maxLength="2"
+                  placeholder="UF"
+                />
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button onClick={handleSaveAddress} disabled={saving}>
+                {saving ? 'Salvando...' : 'Salvar Endereço'}
+              </button>
+              <button onClick={handleCancelAddress} className="btn-secondary" disabled={saving}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="view-info">
+            {address ? (
+              <>
+                <div className="info-field">
+                  <strong>Logradouro:</strong>
+                  <span>{address.logradouro}, {address.numero}</span>
+                </div>
+                {address.complemento && (
+                  <div className="info-field">
+                    <strong>Complemento:</strong>
+                    <span>{address.complemento}</span>
+                  </div>
+                )}
+                <div className="info-field">
+                  <strong>Bairro:</strong>
+                  <span>{address.bairro}</span>
+                </div>
+                <div className="info-field">
+                  <strong>Cidade/UF:</strong>
+                  <span>{address.cidade} - {address.estado}</span>
+                </div>
+                <div className="info-field">
+                  <strong>CEP:</strong>
+                  <span>{address.cep}</span>
+                </div>
+              </>
+            ) : (
+              <div className="empty-message">
+                Nenhum endereço cadastrado.
+              </div>
+            )}
           </div>
         )}
       </div>

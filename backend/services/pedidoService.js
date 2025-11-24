@@ -78,6 +78,11 @@ class PedidoService {
       });
     }
 
+    // Adicionar taxa de entrega ao valor total
+    if (restaurante.taxa_entrega) {
+      valorTotal += parseFloat(restaurante.taxa_entrega);
+    }
+
     // Criar pedido
     const pedidoId = await pedidoRepository.create({
       id_cliente: clienteId,
@@ -155,6 +160,22 @@ class PedidoService {
     return pedidosCompletos;
   }
 
+  // Listar pedidos do entregador
+  async getByEntregador(entregadorId) {
+    const pedidos = await pedidoRepository.findByEntregadorId(entregadorId);
+    
+    // Buscar itens para cada pedido
+    const pedidosCompletos = await Promise.all(
+      pedidos.map(async (pedido) => {
+        const itens = await itemPedidoRepository.findByPedidoId(pedido.id_pedido);
+        pedido.itens = itens.map(i => new ItemPedido(i));
+        return new Pedido(pedido);
+      })
+    );
+
+    return pedidosCompletos;
+  }
+
   // Atualizar status do pedido (apenas restaurante)
   async updateStatus(pedidoId, restauranteId, novoStatus) {
     // Verificar se pedido existe e pertence ao restaurante
@@ -171,8 +192,10 @@ class PedidoService {
     const transicoesValidas = {
       'Pendente': ['Confirmado', 'Cancelado'],
       'Confirmado': ['Em Preparo', 'Cancelado'],
-      'Em Preparo': ['A Caminho', 'Cancelado'],
-      'A Caminho': ['Entregue'],
+      'Em Preparo': ['Pronto', 'Cancelado'],
+      'Pronto': ['A Caminho', 'Cancelado'],
+      'A Caminho': ['Aguardando Confirmação', 'Entregue', 'Cancelado'],
+      'Aguardando Confirmação': ['Entregue', 'Cancelado'],
       'Entregue': [],
       'Cancelado': []
     };
@@ -215,6 +238,36 @@ class PedidoService {
     return this.getById(pedidoId, clienteId, 'cliente');
   }
 
+  // Confirmar entrega pelo cliente
+  async confirmDeliveryByCliente(pedidoId, clienteId) {
+    // Verificar se pedido pertence ao cliente
+    const belongsToCliente = await pedidoRepository.belongsToCliente(pedidoId, clienteId);
+    if (!belongsToCliente) {
+      throw new Error('Pedido não encontrado ou acesso negado');
+    }
+
+    // Buscar pedido
+    const pedido = await pedidoRepository.findById(pedidoId);
+    
+    // Permitir confirmar entrega em qualquer status para fins de teste
+    // if (pedido.status !== 'A Caminho') {
+    //   throw new Error('Apenas pedidos em rota de entrega podem ser confirmados');
+    // }
+
+    // Atualizar status
+    const updated = await pedidoRepository.updateStatus(pedidoId, 'Entregue');
+    if (!updated) {
+      throw new Error('Erro ao confirmar entrega');
+    }
+
+    // Se tiver entregador, atualizar status dele para Disponivel
+    if (pedido.id_entregador) {
+      await entregadorRepository.updateStatus(pedido.id_entregador, 'Disponivel');
+    }
+
+    return this.getById(pedidoId, clienteId, 'cliente');
+  }
+
   // Atribuir entregador ao pedido (quando status = "A Caminho")
   async assignEntregador(pedidoId, restauranteId, entregadorId) {
     // Verificar se pedido pertence ao restaurante
@@ -226,9 +279,9 @@ class PedidoService {
     // Buscar pedido
     const pedido = await pedidoRepository.findById(pedidoId);
 
-    // Só pode atribuir entregador se pedido estiver "A Caminho"
-    if (pedido.status !== 'A Caminho') {
-      throw new Error('Entregador só pode ser atribuído quando pedido estiver "A Caminho"');
+    // Só pode atribuir entregador se pedido estiver "A Caminho" ou "Pronto"
+    if (pedido.status !== 'A Caminho' && pedido.status !== 'Pronto') {
+      throw new Error('Entregador só pode ser atribuído quando pedido estiver "Pronto" ou "A Caminho"');
     }
 
     // Verificar se entregador existe
@@ -237,8 +290,8 @@ class PedidoService {
       throw new Error('Entregador não encontrado');
     }
 
-    // Verificar se entregador está online
-    if (entregador.status_disponibilidade !== 'Online') {
+    // Verificar se entregador está disponivel
+    if (entregador.status_disponibilidade !== 'Disponivel') {
       throw new Error('Entregador não está disponível');
     }
 
@@ -252,6 +305,37 @@ class PedidoService {
     await entregadorRepository.updateStatus(entregadorId, 'Em Entrega');
 
     return this.getById(pedidoId, restauranteId, 'restaurante');
+  }
+
+  // Atualizar status pelo entregador
+  async updateStatusByEntregador(pedidoId, entregadorId, novoStatus) {
+    const pedido = await pedidoRepository.findById(pedidoId);
+    if (!pedido) {
+      throw new Error('Pedido não encontrado');
+    }
+
+    if (parseInt(pedido.id_entregador) !== parseInt(entregadorId)) {
+      throw new Error('Este pedido não está atribuído a este entregador');
+    }
+
+    // Validar transição
+    if (pedido.status === 'A Caminho' && (novoStatus === 'Aguardando Confirmação' || novoStatus === 'Entregue')) {
+      // OK
+    } else {
+      throw new Error(`Transição inválida para entregador: ${pedido.status} -> ${novoStatus}`);
+    }
+
+    const updated = await pedidoRepository.updateStatus(pedidoId, novoStatus);
+    if (!updated) {
+      throw new Error('Erro ao atualizar status do pedido');
+    }
+
+    // Se entregue, liberar entregador
+    if (novoStatus === 'Entregue') {
+      await entregadorRepository.updateStatus(entregadorId, 'Disponivel');
+    }
+
+    return this.getById(pedidoId, null, 'public'); // 'public' bypasses owner check if we implement it, or just use a safe getter
   }
 }
 

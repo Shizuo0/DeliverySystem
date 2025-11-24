@@ -32,11 +32,22 @@ const createPedidoValidation = [
 const updateStatusValidation = [
   body('status')
     .notEmpty().withMessage('Status é obrigatório')
-    .isIn(['Pendente', 'Confirmado', 'Em Preparo', 'A Caminho', 'Entregue', 'Cancelado'])
+    .isIn(['Pendente', 'Confirmado', 'Em Preparo', 'Pronto', 'A Caminho', 'Aguardando Confirmação', 'Entregue', 'Cancelado'])
     .withMessage('Status inválido')
+];
+
+const updateStatusByEntregadorValidation = [
+  body('id_entregador')
+    .notEmpty().withMessage('ID do entregador é obrigatório')
+    .isInt().withMessage('ID do entregador deve ser um número inteiro'),
+  body('status')
+    .notEmpty().withMessage('Status é obrigatório')
+    .isIn(['Aguardando Confirmação', 'Entregue'])
+    .withMessage('Status inválido para entregador')
 ];
 
 module.exports = {
   createPedidoValidation,
-  updateStatusValidation
+  updateStatusValidation,
+  updateStatusByEntregadorValidation
 };

@@ -15,7 +15,7 @@ const updateProfileValidation = [
   body('telefone')
     .optional()
     .trim()
-    .matches(/^\(\d{2}\)\s?\d{4,5}-?\d{4}$/).withMessage('Formato de telefone inválido. Use (XX) XXXXX-XXXX')
+    .matches(/^\d{10,11}$/).withMessage('Telefone deve conter 10 ou 11 dígitos numéricos')
 ];
 
 const changePasswordValidation = [

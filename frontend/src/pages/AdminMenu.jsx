@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getRestaurantMenu,
+  getRestaurantItems,
   getCategorias,
   createCategoria,
   updateCategoria,
@@ -9,7 +9,7 @@ import {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
-  toggleMenuItemAvailability
+  updateMenuItemAvailability
 } from '../services/restaurantService';
 import Loading from '../components/Loading';
 import './AdminMenu.css';
@@ -38,8 +38,11 @@ function AdminMenu() {
   });
 
   useEffect(() => {
-    if (user?.restaurante_id) {
+    if (user?.id_restaurante) {
       fetchData();
+    } else if (user && !user.id_restaurante) {
+      setLoading(false);
+      setError('ID do restaurante não encontrado.');
     }
   }, [user]);
 
@@ -47,8 +50,8 @@ function AdminMenu() {
     try {
       setLoading(true);
       const [menuData, categoriesData] = await Promise.all([
-        getRestaurantMenu(user.restaurante_id),
-        getCategorias(user.restaurante_id)
+        getRestaurantItems(),
+        getCategorias()
       ]);
       setMenu(menuData);
       setCategories(categoriesData);
@@ -64,7 +67,7 @@ function AdminMenu() {
   const handleOpenCategoryModal = (category = null) => {
     if (category) {
       setEditingCategory(category);
-      setCategoryForm({ nome: category.nome, descricao: category.descricao || '' });
+      setCategoryForm({ nome: category.nome_categoria, descricao: '' });
     } else {
       setEditingCategory(null);
       setCategoryForm({ nome: '', descricao: '' });
@@ -81,11 +84,15 @@ function AdminMenu() {
     }
 
     try {
+      const dataToSend = {
+        nome_categoria: categoryForm.nome
+      };
+
       if (editingCategory) {
-        await updateCategoria(editingCategory.id, categoryForm);
+        await updateCategoria(editingCategory.id_categoria, dataToSend);
         setSuccess('Categoria atualizada com sucesso!');
       } else {
-        await createCategoria(categoryForm);
+        await createCategoria(dataToSend);
         setSuccess('Categoria criada com sucesso!');
       }
       setShowCategoryModal(false);
@@ -119,7 +126,7 @@ function AdminMenu() {
         nome: item.nome,
         descricao: item.descricao || '',
         preco: item.preco,
-        categoria_id: item.categoria_id
+        categoria_id: item.id_categoria
       });
     } else {
       setEditingItem(null);
@@ -127,7 +134,7 @@ function AdminMenu() {
         nome: '',
         descricao: '',
         preco: '',
-        categoria_id: categories[0]?.id || ''
+        categoria_id: categories[0]?.id_categoria || ''
       });
     }
     setShowItemModal(true);
@@ -151,12 +158,14 @@ function AdminMenu() {
 
     try {
       const dataToSend = {
-        ...itemForm,
-        preco: parseFloat(itemForm.preco)
+        nome: itemForm.nome,
+        descricao: itemForm.descricao,
+        preco: parseFloat(itemForm.preco),
+        id_categoria: itemForm.categoria_id
       };
 
       if (editingItem) {
-        await updateMenuItem(editingItem.id, dataToSend);
+        await updateMenuItem(editingItem.id_item_cardapio, dataToSend);
         setSuccess('Item atualizado com sucesso!');
       } else {
         await createMenuItem(dataToSend);
@@ -185,9 +194,11 @@ function AdminMenu() {
     }
   };
 
-  const handleToggleAvailability = async (id) => {
+  const handleToggleAvailability = async (item) => {
     try {
-      await toggleMenuItemAvailability(id);
+      // Toggle the current availability
+      const newAvailability = !item.disponivel;
+      await updateMenuItemAvailability(item.id_item_cardapio, newAvailability);
       fetchData();
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao alterar disponibilidade');
@@ -229,10 +240,9 @@ function AdminMenu() {
         <h2>Categorias</h2>
         <div className="categories-grid">
           {categories.map(category => (
-            <div key={category.id} className="category-card">
+            <div key={category.id_categoria} className="category-card">
               <div className="category-info">
-                <h3>{category.nome}</h3>
-                {category.descricao && <p>{category.descricao}</p>}
+                <h3>{category.nome_categoria}</h3>
               </div>
               <div className="category-actions">
                 <button 
@@ -243,7 +253,7 @@ function AdminMenu() {
                   ✏️
                 </button>
                 <button 
-                  onClick={() => handleDeleteCategory(category.id)}
+                  onClick={() => handleDeleteCategory(category.id_categoria)}
                   className="btn-icon btn-danger"
                   title="Excluir"
                 >
@@ -269,7 +279,7 @@ function AdminMenu() {
               <h3>{categoryName}</h3>
               <div className="items-list">
                 {groupedMenu[categoryName].map(item => (
-                  <div key={item.id} className="menu-item-card">
+                  <div key={item.id_item_cardapio} className="menu-item-card">
                     <div className="item-info">
                       <h4>{item.nome}</h4>
                       <p className="item-description">{item.descricao}</p>
@@ -280,7 +290,7 @@ function AdminMenu() {
                     </div>
                     <div className="item-actions">
                       <button
-                        onClick={() => handleToggleAvailability(item.id)}
+                        onClick={() => handleToggleAvailability(item)}
                         className="btn-icon"
                         title={item.disponivel ? 'Tornar indisponível' : 'Tornar disponível'}
                       >
@@ -294,7 +304,7 @@ function AdminMenu() {
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleDeleteItem(item.id)}
+                        onClick={() => handleDeleteItem(item.id_item_cardapio)}
                         className="btn-icon btn-danger"
                         title="Excluir"
                       >
@@ -386,7 +396,7 @@ function AdminMenu() {
               >
                 <option value="">Selecione uma categoria</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                  <option key={cat.id_categoria} value={cat.id_categoria}>{cat.nome_categoria}</option>
                 ))}
               </select>
             </div>

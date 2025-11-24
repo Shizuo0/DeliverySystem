@@ -25,7 +25,7 @@ class EntregadorService {
     const id = await entregadorRepository.create({
       ...entregadorData,
       senha: hashedPassword,
-      status_disponibilidade: entregadorData.status_disponibilidade || 'Offline'
+      status_disponibilidade: entregadorData.status_disponibilidade || 'Indisponivel'
     });
 
     // Buscar entregador criado
@@ -50,7 +50,7 @@ class EntregadorService {
 
   // Listar entregadores por status
   async getByStatus(status) {
-    const validStatus = ['Online', 'Offline', 'Em Entrega'];
+    const validStatus = ['Disponivel', 'Indisponivel', 'Em Entrega'];
     if (!validStatus.includes(status)) {
       throw new Error('Status inválido');
     }
@@ -59,9 +59,9 @@ class EntregadorService {
     return entregadores.map(e => new Entregador(e));
   }
 
-  // Listar entregadores online
+  // Listar entregadores disponiveis
   async getOnline() {
-    const entregadores = await entregadorRepository.findOnline();
+    const entregadores = await entregadorRepository.findByStatus('Disponivel');
     return entregadores.map(e => new Entregador(e));
   }
 
@@ -107,9 +107,9 @@ class EntregadorService {
 
   // Atualizar status de disponibilidade
   async updateStatus(id, status) {
-    const validStatus = ['Online', 'Offline', 'Em Entrega'];
+    const validStatus = ['Disponivel', 'Indisponivel', 'Em Entrega'];
     if (!validStatus.includes(status)) {
-      throw new Error('Status inválido. Use: Online, Offline ou Em Entrega');
+      throw new Error('Status inválido. Use: Disponivel, Indisponivel ou Em Entrega');
     }
 
     const entregador = await entregadorRepository.findById(id);

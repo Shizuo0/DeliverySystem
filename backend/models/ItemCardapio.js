@@ -7,6 +7,7 @@ class ItemCardapio {
     this.descricao = data.descricao;
     this.preco = data.preco;
     this.disponivel = data.disponivel;
+    this.categoria_nome = data.nome_categoria;
   }
 }
 

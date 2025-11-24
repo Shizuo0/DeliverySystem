@@ -54,6 +54,22 @@ class PedidoController {
     }
   }
 
+  // Confirmar entrega (cliente autenticado)
+  async confirmDelivery(req, res, next) {
+    try {
+      const pedido = await pedidoService.confirmDeliveryByCliente(
+        parseInt(req.params.id),
+        req.clienteId
+      );
+      res.json({
+        message: 'Entrega confirmada com sucesso',
+        pedido
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Obter pedido específico (restaurante autenticado)
   async getByIdRestaurante(req, res, next) {
     try {
@@ -79,6 +95,16 @@ class PedidoController {
     }
   }
 
+  // Listar pedidos do entregador
+  async listByEntregador(req, res, next) {
+    try {
+      const pedidos = await pedidoService.getByEntregador(parseInt(req.params.id));
+      res.json(pedidos);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Atualizar status do pedido (restaurante autenticado)
   async updateStatus(req, res, next) {
     try {
@@ -86,6 +112,24 @@ class PedidoController {
         parseInt(req.params.id),
         req.restauranteId,
         req.body.status
+      );
+      res.json({
+        message: 'Status atualizado com sucesso',
+        pedido
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Atualizar status do pedido (entregador)
+  async updateStatusByEntregador(req, res, next) {
+    try {
+      const { id_entregador, status } = req.body;
+      const pedido = await pedidoService.updateStatusByEntregador(
+        parseInt(req.params.id),
+        id_entregador,
+        status
       );
       res.json({
         message: 'Status atualizado com sucesso',

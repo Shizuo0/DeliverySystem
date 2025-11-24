@@ -21,20 +21,50 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Erro ao recuperar sessão do usuário:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = async (credentials) => {
-    const response = await api.post('/auth/login', credentials);
-    const { token, user: userData } = response.data;
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    
-    return response.data;
+  const login = async (credentials, type = 'cliente') => {
+    let response;
+    let userData;
+    let token;
+
+    try {
+      if (type === 'cliente') {
+        response = await api.post('/auth/login', credentials);
+        // Response: { message, data: { cliente, token } }
+        const { cliente, token: t } = response.data.data;
+        userData = { ...cliente, tipo: 'cliente' };
+        token = t;
+      } else if (type === 'restaurante') {
+        response = await api.post('/restaurantes/login', credentials);
+        // Response: { message, restaurante, token }
+        const { restaurante, token: t } = response.data;
+        userData = { ...restaurante, tipo: 'restaurante' };
+        token = t;
+      }
+
+      if (!token || !userData) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      return { user: userData, token };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
