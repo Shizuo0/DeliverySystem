@@ -17,6 +17,7 @@
 [Configuração](#-configuração) •
 [Uso](#-uso) •
 [API](#-api) •
+[Diagramas](#-diagramas) •
 [Autores](#-autores)
 
 </div>
@@ -312,31 +313,23 @@ Authorization: Bearer <token>
 
 </details>
 
-## 🗄 Modelo de Dados
+## 📊 Diagramas
 
-```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│  Clientes   │────<│ EnderecosClientes│     │ Restaurantes│
-└─────────────┘     └──────────────────┘     └─────────────┘
-      │                                            │
-      │    ┌─────────┐                            │
-      └───>│ Pedidos │<───────────────────────────┘
-           └─────────┘                            │
-               │  │                               │
-               │  │     ┌──────────────┐          │
-               │  └────>│ ItensPedido  │          │
-               │        └──────────────┘          │
-               │              │                   │
-               │              v                   │
-               │        ┌──────────────┐    ┌─────────────────┐
-               │        │ItensCardapio │<───│CategoriasCardapio│
-               │        └──────────────┘    └─────────────────┘
-               │
-               v
-        ┌────────────┐         ┌─────────────┐
-        │ Avaliacoes │         │ Entregadores│
-        └────────────┘         └─────────────┘
-```
+### Diagrama Conceitual (Entidade-Relacionamento)
+
+O diagrama conceitual apresenta as entidades do sistema e seus relacionamentos de forma abstrata, sem detalhes de implementação.
+
+<div align="center">
+  <img src="diagrams/DiagramaConceitual.png" alt="Diagrama Conceitual" width="800"/>
+</div>
+
+### Diagrama de Classes
+
+O diagrama de classes mostra a estrutura do sistema com atributos, tipos de dados e cardinalidades dos relacionamentos.
+
+<div align="center">
+  <img src="diagrams/DiagramaClasses.png" alt="Diagrama de Classes" width="800"/>
+</div>
 
 ## 🔒 Segurança
 
