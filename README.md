@@ -319,17 +319,13 @@ Authorization: Bearer <token>
 
 O diagrama conceitual apresenta as entidades do sistema e seus relacionamentos de forma abstrata, sem detalhes de implementação.
 
-<div align="center">
-  <img src="./diagrams/DiagramaConceitual.png" alt="Diagrama Conceitual" width="800"/>
-</div>
+![Diagrama Conceitual](./diagrams/DiagramaConceitual.png)
 
 ### Diagrama de Classes
 
 O diagrama de classes mostra a estrutura do sistema com atributos, tipos de dados e cardinalidades dos relacionamentos.
 
-<div align="center">
-  <img src="./diagrams/DiagramaClasses.png" alt="Diagrama de Classes" width="800"/>
-</div>
+![Diagrama de Classes](./diagrams/DiagramaClasses.png)
 
 ## 🔒 Segurança
 
