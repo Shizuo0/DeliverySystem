@@ -1,114 +1,104 @@
 -- Script de dados de teste para desenvolvimento
 USE delivery_db;
 
--- Inserir clientes de teste (senhas: senha123 - hash bcrypt)
-INSERT INTO Clientes (nome, email, senha, telefone) VALUES
-('João Silva', 'joao@example.com', '$2a$10$YourHashHere', '(85) 98888-7777'),
-('Maria Santos', 'maria@example.com', '$2a$10$YourHashHere', '(85) 98777-6666'),
-('Pedro Oliveira', 'pedro@example.com', '$2a$10$YourHashHere', '(85) 98666-5555');
+-- ============================================
+-- POPULAÇÃO DE DADOS - PARTE 1: ENTIDADES INDEPENDENTES
+-- ============================================
 
--- Inserir endereços de clientes
+-- 1.1 - INSERIR CLIENTES
+INSERT INTO Clientes (nome, email, senha, telefone, cpf) VALUES
+('Maria Silva', 'maria@email.com', 'senha123', '11999990001', '111.111.111-11'),
+('João Souza', 'joao@email.com', 'senha123', '11999990002', '222.222.222-22'),
+('Ana Oliveira', 'ana@email.com', 'senha123', '11999990003', '333.333.333-33'),
+('Pedro Santos', 'pedro@email.com', 'senha123', '11999990004', '444.444.444-44'),
+('Carla Dias', 'carla@email.com', 'senha123', '11999990005', '555.555.555-55');
+
+-- 1.2 - INSERIR RESTAURANTES
+INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional) VALUES
+('Pizzaria Bella Napoli', 'contato@bellanapoli.com', 'admin123', 'Italiana', '1133330001', '12.345.678/0001-01', 'A melhor pizza da cidade', 45, 8.50, 'Aberto'),
+('Burger King King', 'gerencia@burgerkingking.com', 'admin123', 'Hamburgueria', '1133330002', '23.456.789/0001-02', 'Hambúrgueres artesanais', 30, 5.00, 'Aberto'),
+('Sushi House', 'sushi@house.com', 'admin123', 'Japonesa', '1133330003', '34.567.890/0001-03', 'Sushi fresco todo dia', 50, 12.00, 'Fechado'),
+('Pastelaria do Zé', 'ze@pastel.com', 'admin123', 'Brasileira', '1133330004', '45.678.901/0001-04', 'Pastel de feira crocante', 25, 4.00, 'Aberto'),
+('Taco Loco', 'hola@tacoloco.com', 'admin123', 'Mexicana', '1133330005', '56.789.012/0001-05', 'Comida mexicana apimentada', 40, 7.00, 'Fechado');
+
+-- 1.3 - INSERIR ENTREGADORES
+INSERT INTO Entregadores (nome, email, senha, telefone, status_disponibilidade) VALUES
+('Roberto Motoboy', 'roberto@moto.com', 'moto123', '11988880001', 'Disponivel'),
+('Fernanda Entregas', 'fernanda@bike.com', 'bike123', '11988880002', 'Em Entrega'),
+('Carlos Rápido', 'carlos@flash.com', 'flash123', '11988880003', 'Indisponivel'),
+('Juliana Express', 'ju@express.com', 'express123', '11988880004', 'Disponivel'),
+('Marcos Veloz', 'marcos@veloz.com', 'veloz123', '11988880005', 'Disponivel');
+
+-- ============================================
+-- POPULAÇÃO DE DADOS - PARTE 2: ENTIDADES COM DEPENDÊNCIAS
+-- ============================================
+
+-- 2.1 - INSERIR ENDEREÇOS DOS CLIENTES (Depende de Clientes)
 INSERT INTO EnderecosClientes (id_cliente, logradouro, numero, complemento, bairro, cidade, estado, cep, nome_identificador) VALUES
-(1, 'Rua das Flores', '123', 'Apto 45', 'Centro', 'Fortaleza', 'CE', '60000-000', 'Casa'),
-(1, 'Av. Beira Mar', '456', NULL, 'Meireles', 'Fortaleza', 'CE', '60165-121', 'Trabalho'),
-(2, 'Rua do Sol', '789', 'Casa 2', 'Aldeota', 'Fortaleza', 'CE', '60150-160', 'Casa'),
-(3, 'Av. Washington Soares', '1000', 'Sala 301', 'Edson Queiroz', 'Fortaleza', 'CE', '60811-341', 'Escritório');
+(1, 'Rua das Flores', '123', 'Apto 101', 'Centro', 'São Paulo', 'SP', '01001-000', 'Casa'),
+(2, 'Av. Paulista', '1000', 'Sala 5', 'Bela Vista', 'São Paulo', 'SP', '01310-100', 'Trabalho'),
+(3, 'Rua Augusta', '500', NULL, 'Consolação', 'São Paulo', 'SP', '01305-000', 'Casa'),
+(4, 'Rua Oscar Freire', '200', 'Casa 2', 'Jardins', 'São Paulo', 'SP', '01426-000', 'Casa da Namorada'),
+(5, 'Rua da Mooca', '80', NULL, 'Mooca', 'São Paulo', 'SP', '03103-000', 'Casa');
 
--- Inserir restaurantes
-INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, status_operacional) VALUES
-('Pizzaria Bella', 'admin@pizzariabella.com', '$2a$10$YourHashHere', 'Italiana', '(85) 3456-7890', 'Aberto'),
-('Sushi House', 'admin@sushihouse.com', '$2a$10$YourHashHere', 'Japonesa', '(85) 3456-7891', 'Aberto'),
-('Burger King Premium', 'admin@burgerpremium.com', '$2a$10$YourHashHere', 'Hamburgueria', '(85) 3456-7892', 'Fechado'),
-('Cantina do Chef', 'admin@cantinachef.com', '$2a$10$YourHashHere', 'Brasileira', '(85) 3456-7893', 'Aberto');
-
--- Inserir endereços de restaurantes
+-- 2.2 - INSERIR ENDEREÇOS DOS RESTAURANTES (Depende de Restaurantes)
 INSERT INTO EnderecosRestaurantes (id_restaurante, logradouro, numero, complemento, bairro, cidade, estado, cep) VALUES
-(1, 'Rua da Pizza', '100', NULL, 'Centro', 'Fortaleza', 'CE', '60030-000'),
-(2, 'Av. Dom Luís', '200', 'Loja 5', 'Meireles', 'Fortaleza', 'CE', '60160-230'),
-(3, 'Rua dos Burgers', '300', NULL, 'Aldeota', 'Fortaleza', 'CE', '60150-000'),
-(4, 'Av. Santos Dumont', '400', 'Térreo', 'Aldeota', 'Fortaleza', 'CE', '60150-161');
+(1, 'Rua Vergueiro', '10', 'Loja A', 'Liberdade', 'São Paulo', 'SP', '01504-000'),
+(2, 'Rua dos Pinheiros', '55', NULL, 'Pinheiros', 'São Paulo', 'SP', '05422-000'),
+(3, 'Av. Liberdade', '888', NULL, 'Liberdade', 'São Paulo', 'SP', '01502-000'),
+(4, 'Rua Tuiuti', '99', NULL, 'Tatuapé', 'São Paulo', 'SP', '03081-000'),
+(5, 'Rua Itapura', '2020', 'Box 3', 'Tatuapé', 'São Paulo', 'SP', '03310-000');
 
--- Inserir categorias de cardápio
+-- 2.3 - INSERIR CATEGORIAS DE CARDÁPIO (Depende de Restaurantes)
 INSERT INTO CategoriasCardapio (id_restaurante, nome_categoria) VALUES
 (1, 'Pizzas Tradicionais'),
-(1, 'Pizzas Especiais'),
 (1, 'Bebidas'),
-(2, 'Sushis'),
-(2, 'Sashimis'),
-(2, 'Temakis'),
-(3, 'Burgers Clássicos'),
-(3, 'Burgers Gourmet'),
-(3, 'Acompanhamentos'),
-(4, 'Pratos Executivos'),
-(4, 'À La Carte');
+(2, 'Burgers'),
+(2, 'Acompanhamentos'),
+(3, 'Combinados'),
+(3, 'Temakis'),
+(4, 'Pastéis Salgados'),
+(5, 'Tacos');
 
--- Inserir itens de cardápio
--- Pizzaria Bella
+-- 2.4 - INSERIR ITENS DO CARDÁPIO (Depende de Rest e Categorias)
 INSERT INTO ItensCardapio (id_restaurante, id_categoria, nome, descricao, preco, disponivel) VALUES
-(1, 1, 'Pizza Margherita', 'Molho de tomate, mussarela e manjericão', 35.00, true),
-(1, 1, 'Pizza Calabresa', 'Molho de tomate, mussarela e calabresa', 38.00, true),
-(1, 2, 'Pizza Quatro Queijos', 'Mussarela, parmesão, gorgonzola e catupiry', 45.00, true),
-(1, 2, 'Pizza Portuguesa', 'Presunto, mussarela, ovos, cebola e azeitonas', 42.00, true),
-(1, 3, 'Coca-Cola 2L', 'Refrigerante', 10.00, true),
-(1, 3, 'Suco Natural 500ml', 'Sabores variados', 8.00, true);
+(1, 1, 'Pizza Calabresa', 'Molho, mussarela e calabresa fatiada', 45.00, TRUE),
+(1, 1, 'Pizza Marguerita', 'Molho, mussarela, tomate e manjericão', 42.00, TRUE),
+(1, 2, 'Refrigerante 2L', 'Coca-Cola ou Guaraná', 12.00, TRUE),
+(2, 3, 'X-Bacon', 'Hambúrguer 180g, queijo, bacon e molho especial', 28.00, TRUE),
+(2, 4, 'Batata Frita', 'Porção individual de batatas', 10.00, TRUE),
+(3, 5, 'Combo 1 (20 peças)', '10 sashimis, 5 niguiris, 5 uramakis', 65.00, TRUE),
+(4, 7, 'Pastel de Carne', 'Carne moída temperada', 8.00, TRUE),
+(4, 7, 'Pastel de Queijo', 'Queijo mussarela derretido', 8.00, TRUE),
+(5, 8, 'Taco de Carne', 'Tortilla crocante com carne e chilli', 15.00, FALSE), -- Indisponível
+(1, 1, 'Pizza Portuguesa', 'Presunto, ovo, cebola e ervilha', 48.00, TRUE);
 
--- Sushi House
-INSERT INTO ItensCardapio (id_restaurante, id_categoria, nome, descricao, preco, disponivel) VALUES
-(2, 4, 'Combo Sushi 20 peças', 'Variado de sushis', 55.00, true),
-(2, 4, 'Hot Roll Philadelphia', '10 unidades', 35.00, true),
-(2, 5, 'Sashimi Salmão', '12 fatias', 40.00, true),
-(2, 6, 'Temaki Salmão', 'Tradicional', 18.00, true);
+-- 2.5 - INSERIR PEDIDOS (Depende de Cliente, Restaurante, Endereço, Entregador)
+INSERT INTO Pedidos (id_cliente, id_restaurante, id_endereco_cliente, id_entregador, status, valor_total, metodo_pagamento, data_hora) VALUES
+(1, 1, 1, 1, 'Entregue', 57.00, 'Cartão de Crédito', '2024-01-10 19:30:00'),
+(2, 2, 2, 2, 'Em Preparo', 38.00, 'PIX', CURRENT_TIMESTAMP),
+(3, 1, 3, 4, 'A Caminho', 45.00, 'Dinheiro', CURRENT_TIMESTAMP),
+(1, 4, 1, 1, 'Entregue', 20.00, 'PIX', '2024-01-12 18:00:00'),
+(5, 3, 5, NULL, 'Cancelado', 65.00, 'Cartão de Crédito', '2024-01-15 20:00:00'),
+(4, 2, 4, NULL, 'Pendente', 38.00, 'Cartão de Débito', CURRENT_TIMESTAMP);
 
--- Burger Premium
-INSERT INTO ItensCardapio (id_restaurante, id_categoria, nome, descricao, preco, disponivel) VALUES
-(3, 7, 'X-Burger Clássico', 'Hambúrguer, queijo, alface, tomate', 25.00, false),
-(3, 8, 'Burger Gourmet Bacon', 'Hambúrguer artesanal, bacon, queijo especial', 35.00, false),
-(3, 9, 'Batata Frita', 'Porção grande', 15.00, false);
-
--- Cantina do Chef
-INSERT INTO ItensCardapio (id_restaurante, id_categoria, nome, descricao, preco, disponivel) VALUES
-(4, 10, 'Prato Executivo Carne', 'Carne, arroz, feijão, salada', 28.00, true),
-(4, 10, 'Prato Executivo Frango', 'Frango grelhado, arroz, feijão, salada', 25.00, true),
-(4, 11, 'Picanha na Chapa', '300g de picanha com acompanhamentos', 55.00, true);
-
--- Inserir entregadores
-INSERT INTO Entregadores (nome, email, senha, telefone, status_disponibilidade) VALUES
-('Carlos Delivery', 'carlos@delivery.com', '$2a$10$YourHashHere', '(85) 99111-2222', 'Online'),
-('Ana Entrega', 'ana@delivery.com', '$2a$10$YourHashHere', '(85) 99222-3333', 'Online'),
-('Bruno Motoboy', 'bruno@delivery.com', '$2a$10$YourHashHere', '(85) 99333-4444', 'Em Entrega'),
-('Daniela Express', 'daniela@delivery.com', '$2a$10$YourHashHere', '(85) 99444-5555', 'Offline');
-
--- Inserir pedidos de exemplo
-INSERT INTO Pedidos (id_cliente, id_restaurante, id_endereco_cliente, id_entregador, status, valor_total, metodo_pagamento) VALUES
-(1, 1, 1, 1, 'Entregue', 53.00, 'Cartão de Crédito'),
-(2, 2, 3, 2, 'A Caminho', 73.00, 'Dinheiro'),
-(1, 4, 2, 3, 'Em Preparo', 55.00, 'PIX'),
-(3, 1, 4, NULL, 'Pendente', 45.00, 'Cartão de Débito');
-
--- Inserir itens de pedido
--- Pedido 1 (Cliente 1, Pizzaria Bella)
+-- 2.6 - INSERIR ITENS DO PEDIDO (Depende de Pedido e ItemCardapio)
 INSERT INTO ItensPedido (id_pedido, id_item_cardapio, quantidade, preco_unitario_gravado) VALUES
-(1, 1, 1, 35.00),
-(1, 6, 2, 8.00),
-(1, 5, 1, 10.00);
+(1, 1, 1, 45.00), -- Pizza Calabresa
+(1, 3, 1, 12.00), -- Refri
+(2, 4, 1, 28.00), -- X-Bacon
+(2, 5, 1, 10.00), -- Batata
+(3, 1, 1, 45.00), -- Pizza Calabresa
+(4, 7, 1, 8.00),  -- Pastel Carne
+(4, 8, 1, 8.00),  -- Pastel Queijo
+(5, 6, 1, 65.00), -- Combo Sushi
+(6, 4, 1, 28.00); -- X-Bacon
 
--- Pedido 2 (Cliente 2, Sushi House)
-INSERT INTO ItensPedido (id_pedido, id_item_cardapio, quantidade, preco_unitario_gravado) VALUES
-(2, 7, 1, 55.00),
-(2, 10, 1, 18.00);
-
--- Pedido 3 (Cliente 1, Cantina do Chef)
-INSERT INTO ItensPedido (id_pedido, id_item_cardapio, quantidade, preco_unitario_gravado) VALUES
-(3, 13, 1, 55.00);
-
--- Pedido 4 (Cliente 3, Pizzaria Bella)
-INSERT INTO ItensPedido (id_pedido, id_item_cardapio, quantidade, preco_unitario_gravado) VALUES
-(4, 3, 1, 45.00);
-
--- Inserir avaliações
+-- 2.7 - INSERIR AVALIAÇÕES (Depende de Pedido)
 INSERT INTO Avaliacoes (id_pedido, id_cliente, id_restaurante, nota, comentario) VALUES
-(1, 1, 1, 5, 'Pizza excelente! Entrega rápida.'),
-(3, 1, 4, 4, 'Comida boa, mas poderia vir mais quente.');
+(1, 1, 1, 5, 'Pizza chegou quentinha e muito saborosa!'),
+(4, 1, 4, 4, 'Pastel muito bom, mas demorou um pouco.');
+-- Obs: Pedidos não entregues ou cancelados geralmente não têm avaliação ainda.
 
 -- Verificar dados inseridos
 SELECT 'Clientes:', COUNT(*) FROM Clientes;
