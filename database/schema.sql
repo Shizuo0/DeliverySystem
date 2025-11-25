@@ -5,6 +5,7 @@ USE delivery_db;
 CREATE TABLE Clientes (
     id_cliente INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(255) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     telefone VARCHAR(20) NOT NULL,
@@ -29,6 +30,7 @@ CREATE TABLE EnderecosClientes (
 CREATE TABLE Restaurantes (
     id_restaurante INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(255) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email_admin VARCHAR(255) NOT NULL UNIQUE,
     senha_admin VARCHAR(255) NOT NULL,
     tipo_cozinha VARCHAR(100) NULL,

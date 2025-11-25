@@ -6,6 +6,12 @@ const registerValidation = [
     .notEmpty().withMessage('Nome é obrigatório')
     .isLength({ min: 3, max: 255 }).withMessage('Nome deve ter entre 3 e 255 caracteres'),
   
+  body('username')
+    .trim()
+    .notEmpty().withMessage('Username é obrigatório')
+    .isLength({ min: 3, max: 100 }).withMessage('Username deve ter entre 3 e 100 caracteres')
+    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username deve conter apenas letras, números e underscores'),
+  
   body('email')
     .trim()
     .notEmpty().withMessage('Email é obrigatório')

@@ -6,20 +6,20 @@ USE delivery_db;
 -- ============================================
 
 -- 1.1 - INSERIR CLIENTES
-INSERT INTO Clientes (nome, email, senha, telefone, cpf) VALUES
-('Maria Silva', 'maria@email.com', 'senha123', '11999990001', '111.111.111-11'),
-('João Souza', 'joao@email.com', 'senha123', '11999990002', '222.222.222-22'),
-('Ana Oliveira', 'ana@email.com', 'senha123', '11999990003', '333.333.333-33'),
-('Pedro Santos', 'pedro@email.com', 'senha123', '11999990004', '444.444.444-44'),
-('Carla Dias', 'carla@email.com', 'senha123', '11999990005', '555.555.555-55');
+INSERT INTO Clientes (nome, username, email, senha, telefone, cpf) VALUES
+('Maria Silva', 'maria_silva', 'maria@email.com', 'senha123', '11999990001', '111.111.111-11'),
+('João Souza', 'joao_souza', 'joao@email.com', 'senha123', '11999990002', '222.222.222-22'),
+('Ana Oliveira', 'ana_oliveira', 'ana@email.com', 'senha123', '11999990003', '333.333.333-33'),
+('Pedro Santos', 'pedro_santos', 'pedro@email.com', 'senha123', '11999990004', '444.444.444-44'),
+('Carla Dias', 'carla_dias', 'carla@email.com', 'senha123', '11999990005', '555.555.555-55');
 
 -- 1.2 - INSERIR RESTAURANTES
-INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional) VALUES
-('Pizzaria Bella Napoli', 'contato@bellanapoli.com', 'admin123', 'Italiana', '1133330001', '12.345.678/0001-01', 'A melhor pizza da cidade', 45, 8.50, 'Aberto'),
-('Burger King King', 'gerencia@burgerkingking.com', 'admin123', 'Hamburgueria', '1133330002', '23.456.789/0001-02', 'Hambúrgueres artesanais', 30, 5.00, 'Aberto'),
-('Sushi House', 'sushi@house.com', 'admin123', 'Japonesa', '1133330003', '34.567.890/0001-03', 'Sushi fresco todo dia', 50, 12.00, 'Fechado'),
-('Pastelaria do Zé', 'ze@pastel.com', 'admin123', 'Brasileira', '1133330004', '45.678.901/0001-04', 'Pastel de feira crocante', 25, 4.00, 'Aberto'),
-('Taco Loco', 'hola@tacoloco.com', 'admin123', 'Mexicana', '1133330005', '56.789.012/0001-05', 'Comida mexicana apimentada', 40, 7.00, 'Fechado');
+INSERT INTO Restaurantes (nome, username, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional) VALUES
+('Pizzaria Bella Napoli', 'bella_napoli', 'contato@bellanapoli.com', 'admin123', 'Italiana', '1133330001', '12.345.678/0001-01', 'A melhor pizza da cidade', 45, 8.50, 'Aberto'),
+('Burger King King', 'burger_king_king', 'gerencia@burgerkingking.com', 'admin123', 'Hamburgueria', '1133330002', '23.456.789/0001-02', 'Hambúrgueres artesanais', 30, 5.00, 'Aberto'),
+('Sushi House', 'sushi_house', 'sushi@house.com', 'admin123', 'Japonesa', '1133330003', '34.567.890/0001-03', 'Sushi fresco todo dia', 50, 12.00, 'Fechado'),
+('Pastelaria do Zé', 'pastelaria_ze', 'ze@pastel.com', 'admin123', 'Brasileira', '1133330004', '45.678.901/0001-04', 'Pastel de feira crocante', 25, 4.00, 'Aberto'),
+('Taco Loco', 'taco_loco', 'hola@tacoloco.com', 'admin123', 'Mexicana', '1133330005', '56.789.012/0001-05', 'Comida mexicana apimentada', 40, 7.00, 'Fechado');
 
 -- 1.3 - INSERIR ENTREGADORES
 INSERT INTO Entregadores (nome, email, senha, telefone, status_disponibilidade) VALUES

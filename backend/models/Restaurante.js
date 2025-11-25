@@ -2,6 +2,7 @@ class Restaurante {
   constructor(data) {
     this.id_restaurante = data.id_restaurante;
     this.nome = data.nome;
+    this.username = data.username;
     this.email_admin = data.email_admin;
     this.senha_admin = data.senha_admin;
     this.tipo_cozinha = data.tipo_cozinha;

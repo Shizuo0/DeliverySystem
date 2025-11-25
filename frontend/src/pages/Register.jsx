@@ -17,6 +17,7 @@ function Register() {
   const [userType, setUserType] = useState('cliente'); // 'cliente' or 'restaurante'
   const [formData, setFormData] = useState({
     nome: '',
+    username: '',
     email: '',
     senha: '',
     confirmarSenha: '',
@@ -62,9 +63,17 @@ function Register() {
     const errors = {};
     
     if (!formData.nome.trim()) {
-      errors.nome = userType === 'restaurante' ? 'Nome do restaurante é obrigatório' : 'Nome é obrigatório';
+      errors.nome = userType === 'restaurante' ? 'Nome do restaurante é obrigatório' : 'Nome completo é obrigatório';
     } else if (formData.nome.trim().length < 3) {
       errors.nome = 'Nome deve ter no mínimo 3 caracteres';
+    }
+
+    if (!formData.username.trim()) {
+      errors.username = 'Username é obrigatório';
+    } else if (formData.username.trim().length < 3) {
+      errors.username = 'Username deve ter no mínimo 3 caracteres';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username = 'Username deve conter apenas letras, números e underscores';
     }
     
     if (!formData.email.trim()) {
@@ -132,6 +141,7 @@ function Register() {
         endpoint = '/auth/register';
         dataToSend = {
           nome: formData.nome.trim(),
+          username: formData.username.trim(),
           email: formData.email.trim(),
           senha: formData.senha,
           telefone: removeFormatting(formData.telefone),
@@ -141,6 +151,7 @@ function Register() {
         endpoint = '/restaurantes/register';
         dataToSend = {
           nome: formData.nome.trim(),
+          username: formData.username.trim(),
           email_admin: formData.email.trim(),
           senha_admin: formData.senha,
           telefone: removeFormatting(formData.telefone),
@@ -205,6 +216,23 @@ function Register() {
             className={fieldErrors.nome ? 'input-error' : ''}
           />
           {fieldErrors.nome && <span className="field-error">{fieldErrors.nome}</span>}
+          <small className="field-hint">{userType === 'restaurante' ? 'Nome oficial do restaurante (não pode ser alterado depois)' : 'Seu nome real completo (não pode ser alterado depois)'}</small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="seu_username"
+            disabled={loading}
+            className={fieldErrors.username ? 'input-error' : ''}
+          />
+          {fieldErrors.username && <span className="field-error">{fieldErrors.username}</span>}
+          <small className="field-hint">Nome de exibição (pode ser alterado depois)</small>
         </div>
         
         <div className="form-group">

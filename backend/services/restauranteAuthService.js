@@ -12,6 +12,12 @@ class RestauranteAuthService {
       throw new Error('Email já está em uso');
     }
 
+    // Verificar se username já existe
+    const usernameExists = await restauranteRepository.usernameExists(restauranteData.username);
+    if (usernameExists) {
+      throw new Error('Username já está em uso');
+    }
+
     // Hash da senha
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(restauranteData.senha_admin, salt);

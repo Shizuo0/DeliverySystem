@@ -2,6 +2,7 @@ class Cliente {
   constructor(data) {
     this.id_cliente = data.id_cliente;
     this.nome = data.nome;
+    this.username = data.username;
     this.email = data.email;
     this.senha = data.senha;
     this.telefone = data.telefone;

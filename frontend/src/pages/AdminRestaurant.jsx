@@ -24,7 +24,8 @@ function AdminRestaurant() {
   // Restaurant Profile State
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nome: '',
+    username: '',
+    email_admin: '',
     descricao: '',
     telefone: '',
     tempo_entrega_estimado: '',
@@ -65,7 +66,8 @@ function AdminRestaurant() {
       
       setRestaurant(restaurantData);
       setFormData({
-        nome: restaurantData.nome || '',
+        username: restaurantData.username || '',
+        email_admin: restaurantData.email_admin || '',
         descricao: restaurantData.descricao || '',
         telefone: restaurantData.telefone || '',
         tempo_entrega_estimado: restaurantData.tempo_entrega_estimado || '',
@@ -124,8 +126,18 @@ function AdminRestaurant() {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.nome.trim()) {
-      errors.nome = 'Nome é obrigatório';
+    if (!formData.username.trim()) {
+      errors.username = 'Username é obrigatório';
+    } else if (formData.username.trim().length < 3) {
+      errors.username = 'Username deve ter no mínimo 3 caracteres';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username = 'Username deve conter apenas letras, números e underscores';
+    }
+
+    if (!formData.email_admin.trim()) {
+      errors.email_admin = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_admin)) {
+      errors.email_admin = 'Email inválido';
     }
 
     if (!formData.telefone) {
@@ -155,7 +167,8 @@ function AdminRestaurant() {
     setError('');
     setSuccess('');
     setFormData({
-      nome: restaurant.nome || '',
+      username: restaurant.username || '',
+      email_admin: restaurant.email_admin || '',
       descricao: restaurant.descricao || '',
       telefone: formatPhone(restaurant.telefone || ''),
       tempo_entrega_estimado: restaurant.tempo_entrega_estimado || '',
@@ -186,7 +199,8 @@ function AdminRestaurant() {
     setSuccess('');
     setFieldErrors({});
     setFormData({
-      nome: restaurant.nome || '',
+      username: restaurant.username || '',
+      email_admin: restaurant.email_admin || '',
       descricao: restaurant.descricao || '',
       telefone: restaurant.telefone || '',
       tempo_entrega_estimado: restaurant.tempo_entrega_estimado || '',
@@ -233,7 +247,8 @@ function AdminRestaurant() {
 
     try {
       const dataToSend = {
-        nome: formData.nome.trim(),
+        username: formData.username.trim(),
+        email_admin: formData.email_admin.trim(),
         descricao: formData.descricao.trim(),
         telefone: removeFormatting(formData.telefone),
         tempo_entrega_estimado: parseInt(formData.tempo_entrega_estimado),
@@ -335,17 +350,43 @@ function AdminRestaurant() {
         {isEditing ? (
           <div className="edit-form">
             <div className="form-group">
-              <label htmlFor="nome">Nome do Restaurante</label>
+              <label>Nome do Restaurante</label>
               <input
                 type="text"
-                id="nome"
-                name="nome"
-                value={formData.nome}
+                value={restaurant.nome || ''}
+                disabled
+                className="input-disabled"
+                title="Nome não pode ser alterado"
+              />
+              <small className="field-hint">O nome do restaurante não pode ser alterado</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
                 disabled={saving}
-                className={fieldErrors.nome ? 'input-error' : ''}
+                className={fieldErrors.username ? 'input-error' : ''}
               />
-              {fieldErrors.nome && <span className="field-error">{fieldErrors.nome}</span>}
+              {fieldErrors.username && <span className="field-error">{fieldErrors.username}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email_admin">Email Administrativo</label>
+              <input
+                type="email"
+                id="email_admin"
+                name="email_admin"
+                value={formData.email_admin}
+                onChange={handleChange}
+                disabled={saving}
+                className={fieldErrors.email_admin ? 'input-error' : ''}
+              />
+              {fieldErrors.email_admin && <span className="field-error">{fieldErrors.email_admin}</span>}
             </div>
 
             <div className="form-group">
@@ -427,6 +468,14 @@ function AdminRestaurant() {
             <div className="info-field">
               <strong>Nome:</strong>
               <span>{restaurant.nome}</span>
+            </div>
+            <div className="info-field">
+              <strong>Username:</strong>
+              <span>{restaurant.username || 'Não definido'}</span>
+            </div>
+            <div className="info-field">
+              <strong>Email:</strong>
+              <span>{restaurant.email_admin}</span>
             </div>
             <div className="info-field">
               <strong>Descrição:</strong>

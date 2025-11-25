@@ -1,10 +1,11 @@
 const { body } = require('express-validator');
 
 const updateProfileValidation = [
-  body('nome')
+  body('username')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 255 }).withMessage('Nome deve ter entre 3 e 255 caracteres'),
+    .isLength({ min: 3, max: 100 }).withMessage('Username deve ter entre 3 e 100 caracteres')
+    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username deve conter apenas letras, números e underscores'),
   
   body('email')
     .optional()

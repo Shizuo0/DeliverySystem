@@ -4,11 +4,12 @@ class RestauranteRepository {
   // Criar novo restaurante
   async create(restauranteData) {
     const query = `
-      INSERT INTO Restaurantes (nome, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO Restaurantes (nome, username, email_admin, senha_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [result] = await db.execute(query, [
       restauranteData.nome,
+      restauranteData.username,
       restauranteData.email_admin,
       restauranteData.senha_admin,
       restauranteData.tipo_cozinha || null,
@@ -41,9 +42,9 @@ class RestauranteRepository {
     const fields = [];
     const values = [];
 
-    if (restauranteData.nome) {
-      fields.push('nome = ?');
-      values.push(restauranteData.nome);
+    if (restauranteData.username) {
+      fields.push('username = ?');
+      values.push(restauranteData.username);
     }
     if (restauranteData.email_admin) {
       fields.push('email_admin = ?');
@@ -60,10 +61,6 @@ class RestauranteRepository {
     if (restauranteData.telefone !== undefined) {
       fields.push('telefone = ?');
       values.push(restauranteData.telefone);
-    }
-    if (restauranteData.cnpj !== undefined) {
-      fields.push('cnpj = ?');
-      values.push(restauranteData.cnpj);
     }
     if (restauranteData.descricao !== undefined) {
       fields.push('descricao = ?');
@@ -101,7 +98,7 @@ class RestauranteRepository {
 
   // Listar todos os restaurantes
   async findAll() {
-    const query = 'SELECT id_restaurante, nome, email_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional FROM Restaurantes';
+    const query = 'SELECT id_restaurante, nome, username, email_admin, tipo_cozinha, telefone, cnpj, descricao, tempo_entrega_estimado, taxa_entrega, status_operacional FROM Restaurantes';
     const [rows] = await db.execute(query);
     return rows;
   }
@@ -121,6 +118,20 @@ class RestauranteRepository {
   async emailExists(email, excludeId = null) {
     let query = 'SELECT id_restaurante FROM Restaurantes WHERE email_admin = ?';
     const params = [email];
+    
+    if (excludeId) {
+      query += ' AND id_restaurante != ?';
+      params.push(excludeId);
+    }
+    
+    const [rows] = await db.execute(query, params);
+    return rows.length > 0;
+  }
+
+  // Verificar se username já existe
+  async usernameExists(username, excludeId = null) {
+    let query = 'SELECT id_restaurante FROM Restaurantes WHERE username = ?';
+    const params = [username];
     
     if (excludeId) {
       query += ' AND id_restaurante != ?';

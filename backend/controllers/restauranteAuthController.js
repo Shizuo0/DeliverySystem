@@ -4,10 +4,11 @@ class RestauranteAuthController {
   // Registrar novo restaurante
   async register(req, res, next) {
     try {
-      const { nome, email_admin, senha_admin, tipo_cozinha, telefone, cnpj } = req.body;
+      const { nome, username, email_admin, senha_admin, tipo_cozinha, telefone, cnpj } = req.body;
       
       const result = await restauranteAuthService.register({
         nome,
+        username,
         email_admin,
         senha_admin,
         tipo_cozinha,

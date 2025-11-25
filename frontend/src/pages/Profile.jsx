@@ -19,7 +19,7 @@ function Profile() {
   const isRestaurante = user?.tipo === 'restaurante';
 
   const [formData, setFormData] = useState({
-    nome: user?.nome || '',
+    username: user?.username || '',
     telefone: user?.telefone || '',
     email: isRestaurante ? (user?.email_admin || '') : (user?.email || ''),
     tipo_cozinha: user?.tipo_cozinha || '',
@@ -56,10 +56,18 @@ function Profile() {
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.nome.trim()) {
-      errors.nome = 'Nome é obrigatório';
-    } else if (formData.nome.trim().length < 3) {
-      errors.nome = 'Nome deve ter no mínimo 3 caracteres';
+    if (!formData.username.trim()) {
+      errors.username = 'Username é obrigatório';
+    } else if (formData.username.trim().length < 3) {
+      errors.username = 'Username deve ter no mínimo 3 caracteres';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username = 'Username deve conter apenas letras, números e underscores';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Email inválido';
     }
     
     if (!formData.telefone) {
@@ -83,7 +91,9 @@ function Profile() {
     // Format phone for display
     setFormData({
       ...formData,
-      telefone: formatPhone(user.telefone || '')
+      username: user.username || '',
+      telefone: formatPhone(user.telefone || ''),
+      email: isRestaurante ? (user?.email_admin || '') : (user?.email || ''),
     });
   };
 
@@ -93,7 +103,7 @@ function Profile() {
     setSuccess('');
     setFieldErrors({});
     setFormData({
-      nome: user?.nome || '',
+      username: user?.username || '',
       telefone: user?.telefone || '',
       email: isRestaurante ? (user?.email_admin || '') : (user?.email || ''),
       tipo_cozinha: user?.tipo_cozinha || '',
@@ -113,14 +123,16 @@ function Profile() {
     try {
       let endpoint = '/clientes';
       let dataToSend = {
-        nome: formData.nome.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         telefone: removeFormatting(formData.telefone),
       };
 
       if (isRestaurante) {
         endpoint = '/restaurantes/perfil';
         dataToSend = {
-          nome: formData.nome.trim(),
+          username: formData.username.trim(),
+          email_admin: formData.email.trim(),
           telefone: removeFormatting(formData.telefone),
           tipo_cozinha: formData.tipo_cozinha,
         };
@@ -131,12 +143,15 @@ function Profile() {
       // Update user in context
       const updatedData = {
         ...user,
-        nome: response.data.nome,
+        username: response.data.username,
         telefone: response.data.telefone,
       };
 
       if (isRestaurante) {
+        updatedData.email_admin = response.data.email_admin;
         updatedData.tipo_cozinha = response.data.tipo_cozinha;
+      } else {
+        updatedData.email = response.data.email;
       }
 
       updateUser(updatedData);
@@ -201,17 +216,29 @@ function Profile() {
           <div className="profile-info">{isEditing ? (
           <div className="profile-edit-form">
             <div className="form-group">
-              <label htmlFor="nome">{isRestaurante ? 'Nome do Restaurante' : 'Nome Completo'}</label>
+              <label>{isRestaurante ? 'Nome do Restaurante' : 'Nome Completo'}</label>
               <input
                 type="text"
-                id="nome"
-                name="nome"
-                value={formData.nome}
+                value={user?.nome || ''}
+                disabled
+                className="input-disabled"
+                title="Nome não pode ser alterado"
+              />
+              <small className="field-hint">O nome não pode ser alterado</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
                 disabled={loading}
-                className={fieldErrors.nome ? 'input-error' : ''}
+                className={fieldErrors.username ? 'input-error' : ''}
               />
-              {fieldErrors.nome && <span className="field-error">{fieldErrors.nome}</span>}
+              {fieldErrors.username && <span className="field-error">{fieldErrors.username}</span>}
             </div>
 
             <div className="form-group">
@@ -221,11 +248,11 @@ function Profile() {
                 id="email"
                 name="email"
                 value={formData.email}
-                disabled
-                className="input-disabled"
-                title="Email não pode ser alterado"
+                onChange={handleChange}
+                disabled={loading}
+                className={fieldErrors.email ? 'input-error' : ''}
               />
-              <small className="field-hint">O email não pode ser alterado</small>
+              {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
             </div>
 
             <div className="form-group">
@@ -306,8 +333,12 @@ function Profile() {
         ) : (
           <div className="profile-view">
             <div className="profile-field">
-              <strong>{isRestaurante ? 'Nome do Restaurante:' : 'Nome:'}</strong>
+              <strong>{isRestaurante ? 'Nome do Restaurante:' : 'Nome Completo:'}</strong>
               <span>{user.nome}</span>
+            </div>
+            <div className="profile-field">
+              <strong>Username:</strong>
+              <span>{user.username || 'Não definido'}</span>
             </div>
             <div className="profile-field">
               <strong>{isRestaurante ? 'Email Administrativo:' : 'Email:'}</strong>

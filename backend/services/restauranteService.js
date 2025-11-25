@@ -49,11 +49,23 @@ class RestauranteService {
       }
     }
 
+    // Se está atualizando username, verificar se já existe
+    if (updateData.username && updateData.username !== restaurante.username) {
+      const usernameExists = await restauranteRepository.usernameExists(updateData.username, restauranteId);
+      if (usernameExists) {
+        throw new Error('Username já está em uso');
+      }
+    }
+
     // Se está atualizando senha, fazer hash
     if (updateData.senha_admin) {
       const salt = await bcrypt.genSalt(10);
       updateData.senha_admin = await bcrypt.hash(updateData.senha_admin, salt);
     }
+
+    // Remover campos que não podem ser editados
+    delete updateData.nome;
+    delete updateData.cnpj;
 
     // Atualizar restaurante
     const updated = await restauranteRepository.update(restauranteId, updateData);

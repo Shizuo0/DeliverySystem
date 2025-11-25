@@ -4,11 +4,12 @@ class ClienteRepository {
   // Criar novo cliente
   async create(clienteData) {
     const query = `
-      INSERT INTO Clientes (nome, email, senha, telefone, cpf)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO Clientes (nome, username, email, senha, telefone, cpf)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     const [result] = await db.execute(query, [
       clienteData.nome,
+      clienteData.username,
       clienteData.email,
       clienteData.senha,
       clienteData.telefone,
@@ -36,17 +37,13 @@ class ClienteRepository {
     const fields = [];
     const values = [];
 
-    if (clienteData.nome) {
-      fields.push('nome = ?');
-      values.push(clienteData.nome);
+    if (clienteData.username) {
+      fields.push('username = ?');
+      values.push(clienteData.username);
     }
     if (clienteData.telefone) {
       fields.push('telefone = ?');
       values.push(clienteData.telefone);
-    }
-    if (clienteData.cpf) {
-      fields.push('cpf = ?');
-      values.push(clienteData.cpf);
     }
     if (clienteData.email) {
       fields.push('email = ?');
@@ -76,7 +73,7 @@ class ClienteRepository {
 
   // Listar todos os clientes
   async findAll() {
-    const query = 'SELECT id_cliente, nome, email, telefone, cpf, data_cadastro FROM Clientes';
+    const query = 'SELECT id_cliente, nome, username, email, telefone, cpf, data_cadastro FROM Clientes';
     const [rows] = await db.execute(query);
     return rows;
   }
@@ -85,6 +82,20 @@ class ClienteRepository {
   async emailExists(email, excludeId = null) {
     let query = 'SELECT id_cliente FROM Clientes WHERE email = ?';
     const params = [email];
+    
+    if (excludeId) {
+      query += ' AND id_cliente != ?';
+      params.push(excludeId);
+    }
+    
+    const [rows] = await db.execute(query, params);
+    return rows.length > 0;
+  }
+
+  // Verificar se username já existe
+  async usernameExists(username, excludeId = null) {
+    let query = 'SELECT id_cliente FROM Clientes WHERE username = ?';
+    const params = [username];
     
     if (excludeId) {
       query += ' AND id_cliente != ?';
