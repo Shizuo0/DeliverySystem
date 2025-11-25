@@ -217,12 +217,18 @@ const isValidEstado = (estado) => {
  * @returns {boolean}
  */
 const isValidLogradouro = (logradouro) => {
-  // Deve conter pelo menos uma letra
-  const hasLetter = /[a-zA-ZÀ-ÿ]/.test(logradouro);
-  // Não pode conter caracteres potencialmente perigosos
-  const hasDangerousChars = /[<>{}[\]\\]/.test(logradouro);
+  const trimmed = logradouro.trim();
   
-  return hasLetter && !hasDangerousChars;
+  // Deve conter pelo menos uma letra
+  const hasLetter = /[a-zA-ZÀ-ÿ]/.test(trimmed);
+  
+  // Não pode conter caracteres potencialmente perigosos
+  const hasDangerousChars = /[<>{}[\]\\]/.test(trimmed);
+  
+  // Não pode ser apenas números e espaços
+  const isOnlyNumbers = /^[\d\s]+$/.test(trimmed);
+  
+  return hasLetter && !hasDangerousChars && !isOnlyNumbers;
 };
 
 /**
@@ -253,14 +259,24 @@ const isValidCidade = (cidade) => {
 };
 
 /**
- * Valida bairro
+ * Valida bairro (deve conter pelo menos uma letra)
  * @param {string} bairro - Nome do bairro
  * @returns {boolean}
  */
 const isValidBairro = (bairro) => {
+  const trimmed = bairro.trim();
+  
   // Permite letras, números, espaços e alguns caracteres especiais
   const bairroRegex = /^[a-zA-ZÀ-ÿ0-9\s'-]+$/;
-  return bairroRegex.test(bairro.trim());
+  if (!bairroRegex.test(trimmed)) return false;
+  
+  // Deve conter pelo menos uma letra
+  if (!/[a-zA-ZÀ-ÿ]/.test(trimmed)) return false;
+  
+  // Não pode ser apenas números e espaços
+  if (/^[\d\s]+$/.test(trimmed)) return false;
+  
+  return true;
 };
 
 /**

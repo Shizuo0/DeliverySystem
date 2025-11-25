@@ -97,8 +97,19 @@ const createEnderecoValidation = [
     .trim()
     .isLength({ max: 45 }).withMessage('Nome identificador deve ter no máximo 45 caracteres')
     .custom((value) => {
-      if (value && /[<>{}[\]\\]/.test(value)) {
-        throw new Error('Nome identificador contém caracteres não permitidos');
+      if (value) {
+        // Não pode conter caracteres perigosos
+        if (/[<>{}[\]\\]/.test(value)) {
+          throw new Error('Nome identificador contém caracteres não permitidos');
+        }
+        // Não pode ser apenas números
+        if (/^[\d\s]+$/.test(value)) {
+          throw new Error('Nome identificador deve conter letras (ex: Casa, Trabalho, Apartamento)');
+        }
+        // Deve conter pelo menos uma letra
+        if (!/[a-zA-ZÀ-ÿ]/.test(value)) {
+          throw new Error('Nome identificador deve conter pelo menos uma letra');
+        }
       }
       return true;
     })
@@ -192,6 +203,23 @@ const updateEnderecoValidation = [
     .optional()
     .trim()
     .isLength({ max: 45 }).withMessage('Nome identificador deve ter no máximo 45 caracteres')
+    .custom((value) => {
+      if (value) {
+        // Não pode conter caracteres perigosos
+        if (/[<>{}[\]\\]/.test(value)) {
+          throw new Error('Nome identificador contém caracteres não permitidos');
+        }
+        // Não pode ser apenas números
+        if (/^[\d\s]+$/.test(value)) {
+          throw new Error('Nome identificador deve conter letras (ex: Casa, Trabalho)');
+        }
+        // Deve conter pelo menos uma letra
+        if (!/[a-zA-ZÀ-ÿ]/.test(value)) {
+          throw new Error('Nome identificador deve conter pelo menos uma letra');
+        }
+      }
+      return true;
+    })
 ];
 
 module.exports = {

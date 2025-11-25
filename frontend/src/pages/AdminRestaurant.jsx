@@ -22,7 +22,7 @@ import {
   isValidBairro,
   isValidLogradouro,
   isValidNumeroEndereco,
-  ESTADOS_VALIDOS
+  ESTADOS_BRASIL
 } from '../utils/formatters';
 import Loading from '../components/Loading';
 import './AdminRestaurant.css';
@@ -137,9 +137,8 @@ function AdminRestaurant() {
     
     if (name === 'cep') {
       formattedValue = formatCEP(value);
-    } else if (name === 'estado') {
-      formattedValue = value.toUpperCase().slice(0, 2);
     }
+    // Estado agora é um select, não precisa de formatação
     
     setAddressForm({
       ...addressForm,
@@ -225,7 +224,7 @@ function AdminRestaurant() {
     } else if (addressForm.logradouro.trim().length < 3) {
       errors.logradouro = 'Logradouro deve ter no mínimo 3 caracteres';
     } else if (!isValidLogradouro(addressForm.logradouro)) {
-      errors.logradouro = 'Logradouro deve conter pelo menos uma letra';
+      errors.logradouro = 'Logradouro deve conter letras (ex: Rua das Flores, Av. Brasil)';
     }
     
     // Validate numero
@@ -239,7 +238,7 @@ function AdminRestaurant() {
     if (!addressForm.bairro || !addressForm.bairro.trim()) {
       errors.bairro = 'Bairro é obrigatório';
     } else if (!isValidBairro(addressForm.bairro)) {
-      errors.bairro = 'Bairro contém caracteres inválidos';
+      errors.bairro = 'Bairro deve conter letras (ex: Centro, Jardim América)';
     }
     
     // Validate cidade
@@ -581,7 +580,7 @@ function AdminRestaurant() {
             </div>
 
             <div className="form-actions">
-              <button onClick={handleSave} disabled={saving}>
+              <button onClick={handleSave} className="btn-primary" disabled={saving}>
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
               <button onClick={handleCancel} className="btn-secondary" disabled={saving}>
@@ -743,17 +742,21 @@ function AdminRestaurant() {
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label htmlFor="estado">Estado</label>
-                <input
-                  type="text"
+                <select
                   id="estado"
                   name="estado"
                   value={addressForm.estado}
                   onChange={handleAddressChange}
                   disabled={saving}
-                  maxLength="2"
-                  placeholder="UF"
                   className={addressErrors.estado ? 'input-error' : ''}
-                />
+                >
+                  <option value="">Selecione o estado</option>
+                  {ESTADOS_BRASIL.map(estado => (
+                    <option key={estado.uf} value={estado.uf}>
+                      {estado.uf} - {estado.nome}
+                    </option>
+                  ))}
+                </select>
                 {addressErrors.estado && (
                   <span className="field-error">{addressErrors.estado}</span>
                 )}
@@ -761,7 +764,7 @@ function AdminRestaurant() {
             </div>
 
             <div className="form-actions">
-              <button onClick={handleSaveAddress} disabled={saving}>
+              <button onClick={handleSaveAddress} className="btn-primary" disabled={saving}>
                 {saving ? 'Salvando...' : 'Salvar Endereço'}
               </button>
               <button onClick={handleCancelAddress} className="btn-secondary" disabled={saving}>

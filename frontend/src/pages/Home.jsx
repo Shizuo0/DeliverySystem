@@ -138,6 +138,7 @@ function Home() {
       {
         id: selectedRestaurant.id || selectedRestaurant.id_restaurante,
         nome: selectedRestaurant.nome,
+        taxa_entrega: selectedRestaurant.taxa_entrega || 0,
       }
     );
   };

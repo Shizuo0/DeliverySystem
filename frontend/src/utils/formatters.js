@@ -179,6 +179,37 @@ export const ESTADOS_VALIDOS = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
+// Estados com nome completo para exibição
+export const ESTADOS_BRASIL = [
+  { uf: 'AC', nome: 'Acre' },
+  { uf: 'AL', nome: 'Alagoas' },
+  { uf: 'AP', nome: 'Amapá' },
+  { uf: 'AM', nome: 'Amazonas' },
+  { uf: 'BA', nome: 'Bahia' },
+  { uf: 'CE', nome: 'Ceará' },
+  { uf: 'DF', nome: 'Distrito Federal' },
+  { uf: 'ES', nome: 'Espírito Santo' },
+  { uf: 'GO', nome: 'Goiás' },
+  { uf: 'MA', nome: 'Maranhão' },
+  { uf: 'MT', nome: 'Mato Grosso' },
+  { uf: 'MS', nome: 'Mato Grosso do Sul' },
+  { uf: 'MG', nome: 'Minas Gerais' },
+  { uf: 'PA', nome: 'Pará' },
+  { uf: 'PB', nome: 'Paraíba' },
+  { uf: 'PR', nome: 'Paraná' },
+  { uf: 'PE', nome: 'Pernambuco' },
+  { uf: 'PI', nome: 'Piauí' },
+  { uf: 'RJ', nome: 'Rio de Janeiro' },
+  { uf: 'RN', nome: 'Rio Grande do Norte' },
+  { uf: 'RS', nome: 'Rio Grande do Sul' },
+  { uf: 'RO', nome: 'Rondônia' },
+  { uf: 'RR', nome: 'Roraima' },
+  { uf: 'SC', nome: 'Santa Catarina' },
+  { uf: 'SP', nome: 'São Paulo' },
+  { uf: 'SE', nome: 'Sergipe' },
+  { uf: 'TO', nome: 'Tocantins' }
+];
+
 // Validate Estado (UF)
 export const isValidEstado = (estado) => {
   return ESTADOS_VALIDOS.includes(estado.toUpperCase());
@@ -213,18 +244,37 @@ export const isValidCidade = (cidade) => {
   return cidadeRegex.test(cidade.trim());
 };
 
-// Validate bairro
+// Validate bairro (must contain at least one letter, cannot be only numbers)
 export const isValidBairro = (bairro) => {
+  const trimmed = bairro.trim();
+  
+  // Regex para caracteres válidos
   const bairroRegex = /^[a-zA-ZÀ-ÿ0-9\s'-]+$/;
-  return bairroRegex.test(bairro.trim());
+  if (!bairroRegex.test(trimmed)) return false;
+  
+  // Deve conter pelo menos uma letra
+  if (!/[a-zA-ZÀ-ÿ]/.test(trimmed)) return false;
+  
+  // Não pode ser apenas números e espaços
+  if (/^[\d\s]+$/.test(trimmed)) return false;
+  
+  return true;
 };
 
-// Validate logradouro (must contain at least one letter)
+// Validate logradouro (must contain at least one letter, cannot be only numbers)
 export const isValidLogradouro = (logradouro) => {
-  const hasLetter = /[a-zA-ZÀ-ÿ]/.test(logradouro);
-  const hasDangerousChars = /[<>{}[\]\\]/.test(logradouro);
+  const trimmed = logradouro.trim();
   
-  return hasLetter && !hasDangerousChars;
+  // Deve conter pelo menos uma letra
+  const hasLetter = /[a-zA-ZÀ-ÿ]/.test(trimmed);
+  
+  // Não pode conter caracteres perigosos
+  const hasDangerousChars = /[<>{}[\]\\]/.test(trimmed);
+  
+  // Não pode ser apenas números e espaços
+  const isOnlyNumbers = /^[\d\s]+$/.test(trimmed);
+  
+  return hasLetter && !hasDangerousChars && !isOnlyNumbers;
 };
 
 // Validate numero de endereço (apenas números ou S/N)

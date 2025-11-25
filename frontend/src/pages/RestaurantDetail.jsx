@@ -64,7 +64,7 @@ function RestaurantDetail() {
       {
         id: restaurant.id || restaurant.id_restaurante,
         nome: restaurant.nome,
-        taxa_entrega: restaurant.taxa_entrega
+        taxa_entrega: Number(restaurant.taxa_entrega) || 0
       }
     );
   };

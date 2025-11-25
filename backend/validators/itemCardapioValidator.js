@@ -14,6 +14,14 @@ const createItemCardapioValidation = [
       if (/[<>{}[\]\\]/.test(value)) {
         throw new Error('Nome contém caracteres não permitidos');
       }
+      // Verificar se contém pelo menos uma letra
+      if (!/[a-zA-ZÀ-ÿ]/.test(value)) {
+        throw new Error('Nome do item deve conter pelo menos uma letra');
+      }
+      // Não permitir apenas números e espaços
+      if (/^[\d\s]+$/.test(value)) {
+        throw new Error('Nome do item não pode conter apenas números');
+      }
       return true;
     }),
   
@@ -57,6 +65,14 @@ const updateItemCardapioValidation = [
     .custom((value) => {
       if (value && /[<>{}[\]\\]/.test(value)) {
         throw new Error('Nome contém caracteres não permitidos');
+      }
+      // Verificar se contém pelo menos uma letra
+      if (value && !/[a-zA-ZÀ-ÿ]/.test(value)) {
+        throw new Error('Nome do item deve conter pelo menos uma letra');
+      }
+      // Não permitir apenas números e espaços
+      if (value && /^[\d\s]+$/.test(value)) {
+        throw new Error('Nome do item não pode conter apenas números');
       }
       return true;
     }),

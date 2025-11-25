@@ -295,7 +295,7 @@ function AdminMenu() {
           <button onClick={() => handleOpenCategoryModal()} className="btn-secondary">
             + Nova Categoria
           </button>
-          <button onClick={() => handleOpenItemModal()}>
+          <button onClick={() => handleOpenItemModal()} className="btn-secondary">
             + Novo Item
           </button>
         </div>
@@ -392,33 +392,45 @@ function AdminMenu() {
       {showCategoryModal && (
         <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h2>
-            <div className="form-group">
-              <label>Nome *</label>
-              <input
-                type="text"
-                value={categoryForm.nome}
-                onChange={(e) => setCategoryForm({ ...categoryForm, nome: e.target.value })}
-                placeholder="Ex: Pizzas, Bebidas, Sobremesas"
-                maxLength="100"
-              />
-            </div>
-            <div className="form-group">
-              <label>Descrição (opcional)</label>
-              <textarea
-                value={categoryForm.descricao}
-                onChange={(e) => setCategoryForm({ ...categoryForm, descricao: e.target.value })}
-                placeholder="Descrição da categoria..."
-                rows="3"
-                maxLength="255"
-              />
-            </div>
-            <div className="modal-actions">
-              <button onClick={handleSaveCategory}>
-                {editingCategory ? 'Atualizar' : 'Criar'}
+            <div className="modal-header">
+              <h2>{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h2>
+              <button 
+                className="modal-close-btn" 
+                onClick={() => setShowCategoryModal(false)}
+                type="button"
+              >
+                ✕
               </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Nome da Categoria *</label>
+                <input
+                  type="text"
+                  value={categoryForm.nome}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, nome: e.target.value })}
+                  placeholder="Ex: Pizzas, Bebidas, Sobremesas"
+                  maxLength="100"
+                />
+                <span className="field-hint">Este nome aparecerá no cardápio para os clientes</span>
+              </div>
+              <div className="form-group">
+                <label>Descrição (opcional)</label>
+                <textarea
+                  value={categoryForm.descricao}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, descricao: e.target.value })}
+                  placeholder="Descreva os tipos de itens desta categoria..."
+                  rows="3"
+                  maxLength="255"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
               <button onClick={() => setShowCategoryModal(false)} className="btn-secondary">
                 Cancelar
+              </button>
+              <button onClick={handleSaveCategory} className="btn-primary">
+                {editingCategory ? 'Salvar Alterações' : 'Criar Categoria'}
               </button>
             </div>
           </div>
@@ -429,57 +441,70 @@ function AdminMenu() {
       {showItemModal && (
         <div className="modal-overlay" onClick={() => setShowItemModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingItem ? 'Editar Item' : 'Novo Item'}</h2>
-            <div className="form-group">
-              <label>Nome *</label>
-              <input
-                type="text"
-                value={itemForm.nome}
-                onChange={(e) => setItemForm({ ...itemForm, nome: e.target.value })}
-                placeholder="Nome do item"
-                maxLength="100"
-              />
-            </div>
-            <div className="form-group">
-              <label>Descrição (opcional)</label>
-              <textarea
-                value={itemForm.descricao}
-                onChange={(e) => setItemForm({ ...itemForm, descricao: e.target.value })}
-                placeholder="Descrição do item..."
-                rows="3"
-                maxLength="500"
-              />
-            </div>
-            <div className="form-group">
-              <label>Preço (R$) *</label>
-              <input
-                type="number"
-                value={itemForm.preco}
-                onChange={(e) => setItemForm({ ...itemForm, preco: e.target.value })}
-                placeholder="0.00"
-                step="0.01"
-                min="0.01"
-                max="9999.99"
-              />
-            </div>
-            <div className="form-group">
-              <label>Categoria</label>
-              <select
-                value={itemForm.categoria_id}
-                onChange={(e) => setItemForm({ ...itemForm, categoria_id: e.target.value })}
+            <div className="modal-header">
+              <h2>{editingItem ? 'Editar Item' : 'Novo Item'}</h2>
+              <button 
+                className="modal-close-btn" 
+                onClick={() => setShowItemModal(false)}
+                type="button"
               >
-                <option value="">Selecione uma categoria</option>
-                {categories.map(cat => (
-                  <option key={cat.id_categoria} value={cat.id_categoria}>{cat.nome_categoria}</option>
-                ))}
-              </select>
-            </div>
-            <div className="modal-actions">
-              <button onClick={handleSaveItem}>
-                {editingItem ? 'Atualizar' : 'Criar'}
+                ✕
               </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Nome do Item *</label>
+                <input
+                  type="text"
+                  value={itemForm.nome}
+                  onChange={(e) => setItemForm({ ...itemForm, nome: e.target.value })}
+                  placeholder="Ex: Pizza Margherita, Hambúrguer Artesanal"
+                  maxLength="100"
+                />
+              </div>
+              <div className="form-group">
+                <label>Descrição (opcional)</label>
+                <textarea
+                  value={itemForm.descricao}
+                  onChange={(e) => setItemForm({ ...itemForm, descricao: e.target.value })}
+                  placeholder="Descreva os ingredientes e detalhes do item..."
+                  rows="3"
+                  maxLength="500"
+                />
+                <span className="field-hint">Uma boa descrição ajuda os clientes a escolher</span>
+              </div>
+              <div className="form-group">
+                <label>Preço (R$) *</label>
+                <input
+                  type="number"
+                  value={itemForm.preco}
+                  onChange={(e) => setItemForm({ ...itemForm, preco: e.target.value })}
+                  placeholder="0,00"
+                  step="0.01"
+                  min="0.01"
+                  max="9999.99"
+                />
+                <span className="field-hint">Valor entre R$ 0,01 e R$ 9.999,99</span>
+              </div>
+              <div className="form-group">
+                <label>Categoria *</label>
+                <select
+                  value={itemForm.categoria_id}
+                  onChange={(e) => setItemForm({ ...itemForm, categoria_id: e.target.value })}
+                >
+                  <option value="">Selecione uma categoria</option>
+                  {categories.map(cat => (
+                    <option key={cat.id_categoria} value={cat.id_categoria}>{cat.nome_categoria}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
               <button onClick={() => setShowItemModal(false)} className="btn-secondary">
                 Cancelar
+              </button>
+              <button onClick={handleSaveItem} className="btn-primary">
+                {editingItem ? 'Salvar Alterações' : 'Criar Item'}
               </button>
             </div>
           </div>

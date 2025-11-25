@@ -210,6 +210,11 @@ class PedidoService {
       throw new Error('Erro ao atualizar status do pedido');
     }
 
+    // Se marcado como Entregue ou Cancelado, liberar o entregador
+    if ((novoStatus === 'Entregue' || novoStatus === 'Cancelado') && pedido.id_entregador) {
+      await entregadorRepository.updateStatus(pedido.id_entregador, 'Disponivel');
+    }
+
     return this.getById(pedidoId, restauranteId, 'restaurante');
   }
 

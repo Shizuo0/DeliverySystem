@@ -14,7 +14,7 @@ import {
   isValidLogradouro,
   isValidNumeroEndereco,
   validateAddress,
-  ESTADOS_VALIDOS
+  ESTADOS_BRASIL
 } from '../utils/formatters';
 import './ProfileAddresses.css';
 
@@ -64,9 +64,8 @@ function ProfileAddresses() {
     // Apply formatting
     if (name === 'cep') {
       formattedValue = formatCEP(value);
-    } else if (name === 'estado') {
-      formattedValue = value.toUpperCase().slice(0, 2);
     }
+    // Estado agora é um select, não precisa de formatação
     
     setFormData({ ...formData, [name]: formattedValue });
     
@@ -79,13 +78,26 @@ function ProfileAddresses() {
   const validateForm = () => {
     const errors = {};
     
+    // Validate nome_identificador (opcional, mas se preenchido deve conter letras)
+    if (formData.nome_identificador && formData.nome_identificador.trim()) {
+      const nome = formData.nome_identificador.trim();
+      // Não pode ser apenas números
+      if (/^[\d\s]+$/.test(nome)) {
+        errors.nome_identificador = 'Nome deve conter letras (ex: Casa, Trabalho, Apartamento)';
+      } else if (!/[a-zA-ZÀ-ÿ]/.test(nome)) {
+        errors.nome_identificador = 'Nome deve conter pelo menos uma letra';
+      } else if (/[<>{}[\]\\]/.test(nome)) {
+        errors.nome_identificador = 'Nome contém caracteres não permitidos';
+      }
+    }
+    
     // Validate logradouro
     if (!formData.logradouro || !formData.logradouro.trim()) {
       errors.logradouro = 'Logradouro é obrigatório';
     } else if (formData.logradouro.trim().length < 3) {
       errors.logradouro = 'Logradouro deve ter no mínimo 3 caracteres';
     } else if (!isValidLogradouro(formData.logradouro)) {
-      errors.logradouro = 'Logradouro deve conter pelo menos uma letra';
+      errors.logradouro = 'Logradouro deve conter letras (ex: Rua das Flores, Av. Brasil)';
     }
     
     // Validate numero
@@ -101,7 +113,7 @@ function ProfileAddresses() {
     } else if (formData.bairro.trim().length < 2) {
       errors.bairro = 'Bairro deve ter no mínimo 2 caracteres';
     } else if (!isValidBairro(formData.bairro)) {
-      errors.bairro = 'Bairro contém caracteres inválidos';
+      errors.bairro = 'Bairro deve conter letras (ex: Centro, Jardim América)';
     }
     
     // Validate cidade
@@ -251,7 +263,9 @@ function ProfileAddresses() {
                     onChange={handleChange}
                     placeholder="Casa"
                     maxLength="45"
+                    className={fieldErrors.nome_identificador ? 'input-error' : ''}
                   />
+                  {fieldErrors.nome_identificador && <span className="field-error">{fieldErrors.nome_identificador}</span>}
                 </div>
 
                 <div className="form-group">
@@ -355,9 +369,11 @@ function ProfileAddresses() {
                     onChange={handleChange}
                     className={fieldErrors.estado ? 'input-error' : ''}
                   >
-                    <option value="">UF</option>
-                    {ESTADOS_VALIDOS.map(uf => (
-                      <option key={uf} value={uf}>{uf}</option>
+                    <option value="">Selecione o estado</option>
+                    {ESTADOS_BRASIL.map(estado => (
+                      <option key={estado.uf} value={estado.uf}>
+                        {estado.uf} - {estado.nome}
+                      </option>
                     ))}
                   </select>
                   {fieldErrors.estado && <span className="field-error">{fieldErrors.estado}</span>}

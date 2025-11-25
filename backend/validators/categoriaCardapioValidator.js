@@ -10,6 +10,14 @@ const createCategoriaValidation = [
       if (/[<>{}[\]\\]/.test(value)) {
         throw new Error('Nome da categoria contém caracteres não permitidos');
       }
+      // Verificar se contém pelo menos uma letra
+      if (!/[a-zA-ZÀ-ÿ]/.test(value)) {
+        throw new Error('Nome da categoria deve conter pelo menos uma letra');
+      }
+      // Não permitir apenas números e espaços
+      if (/^[\d\s]+$/.test(value)) {
+        throw new Error('Nome da categoria não pode conter apenas números');
+      }
       return true;
     })
 ];
@@ -23,6 +31,14 @@ const updateCategoriaValidation = [
       // Verificar caracteres perigosos
       if (/[<>{}[\]\\]/.test(value)) {
         throw new Error('Nome da categoria contém caracteres não permitidos');
+      }
+      // Verificar se contém pelo menos uma letra
+      if (!/[a-zA-ZÀ-ÿ]/.test(value)) {
+        throw new Error('Nome da categoria deve conter pelo menos uma letra');
+      }
+      // Não permitir apenas números e espaços
+      if (/^[\d\s]+$/.test(value)) {
+        throw new Error('Nome da categoria não pode conter apenas números');
       }
       return true;
     })

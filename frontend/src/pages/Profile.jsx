@@ -343,7 +343,7 @@ function Profile() {
             )}
 
             <div className="profile-actions">
-              <button onClick={handleSave} disabled={loading}>
+              <button onClick={handleSave} className="btn-primary" disabled={loading}>
                 {loading ? 'Salvando...' : 'Salvar Alterações'}
               </button>
               <button onClick={handleCancel} className="btn-secondary" disabled={loading}>
