@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { formatCPF, formatPhone, removeFormatting, isValidPhone, formatCNPJ } from '../utils/formatters';
+import { 
+  formatCPF, 
+  formatPhone, 
+  removeFormatting, 
+  isValidPhone, 
+  isValidDDD,
+  isValidEmail,
+  isValidUsername,
+  formatCNPJ 
+} from '../utils/formatters';
 import Loading from '../components/Loading';
 import ProfileAddresses from './ProfileAddresses';
 import api from '../services/api';
@@ -56,26 +65,38 @@ function Profile() {
   const validateForm = () => {
     const errors = {};
     
+    // Validate username
     if (!formData.username.trim()) {
       errors.username = 'Username é obrigatório';
     } else if (formData.username.trim().length < 3) {
       errors.username = 'Username deve ter no mínimo 3 caracteres';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      errors.username = 'Username deve conter apenas letras, números e underscores';
+    } else if (!isValidUsername(formData.username)) {
+      if (/^\d/.test(formData.username)) {
+        errors.username = 'Username não pode começar com número';
+      } else if (/__/.test(formData.username)) {
+        errors.username = 'Username não pode ter underscores consecutivos';
+      } else {
+        errors.username = 'Username deve conter apenas letras, números e underscores (_)';
+      }
     }
 
+    // Validate email
     if (!formData.email.trim()) {
       errors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Email inválido';
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = 'Formato de email inválido. Use um email válido como exemplo@dominio.com';
     }
     
+    // Validate phone
     if (!formData.telefone) {
       errors.telefone = 'Telefone é obrigatório';
     } else if (!isValidPhone(formData.telefone)) {
-      errors.telefone = 'Telefone inválido';
+      errors.telefone = 'Telefone deve conter 10 dígitos (fixo) ou 11 dígitos (celular)';
+    } else if (!isValidDDD(formData.telefone)) {
+      errors.telefone = 'DDD inválido. Verifique o código de área';
     }
 
+    // Validate tipo_cozinha for restaurants
     if (isRestaurante && !formData.tipo_cozinha?.trim()) {
       errors.tipo_cozinha = 'Tipo de cozinha é obrigatório';
     }

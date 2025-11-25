@@ -5,6 +5,16 @@ import { useToast } from '../context/ToastContext';
 import api from '../services/api';
 import Loading from '../components/Loading';
 import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  formatPhone,
+  removeFormatting,
+  isValidPhone,
+  isValidDDD,
+  isValidEmail,
+  isValidNome,
+  validatePassword,
+  validateFullName
+} from '../utils/formatters';
 import './AdminDeliverers.css';
 
 function AdminDeliverers() {
@@ -17,6 +27,7 @@ function AdminDeliverers() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -109,24 +120,88 @@ function AdminDeliverers() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    let formattedValue = value;
+    
+    // Apply formatting for phone
+    if (name === 'telefone') {
+      formattedValue = formatPhone(value);
+    }
+    
+    setFormData({ ...formData, [name]: formattedValue });
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: '' });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate nome
+    if (!formData.nome || !formData.nome.trim()) {
+      errors.nome = 'Nome é obrigatório';
+    } else if (formData.nome.trim().length < 3) {
+      errors.nome = 'Nome deve ter no mínimo 3 caracteres';
+    } else {
+      const nameValidation = validateFullName(formData.nome);
+      if (!nameValidation.valid) {
+        errors.nome = nameValidation.errors[0];
+      }
+    }
+    
+    // Validate email
+    if (!formData.email || !formData.email.trim()) {
+      errors.email = 'Email é obrigatório';
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = 'Formato de email inválido. Use um email válido como exemplo@dominio.com';
+    }
+    
+    // Validate senha (required only for new deliverers)
+    if (!editingId) {
+      if (!formData.senha) {
+        errors.senha = 'Senha é obrigatória para novos entregadores';
+      } else {
+        const passwordValidation = validatePassword(formData.senha);
+        if (!passwordValidation.valid) {
+          errors.senha = passwordValidation.errors[0];
+        }
+      }
+    } else if (formData.senha) {
+      // If editing and password is provided, validate it
+      const passwordValidation = validatePassword(formData.senha);
+      if (!passwordValidation.valid) {
+        errors.senha = passwordValidation.errors[0];
+      }
+    }
+    
+    // Validate telefone
+    if (!formData.telefone || !formData.telefone.trim()) {
+      errors.telefone = 'Telefone é obrigatório';
+    } else if (!isValidPhone(formData.telefone)) {
+      errors.telefone = 'Telefone deve conter 10 dígitos (fixo) ou 11 dígitos (celular)';
+    } else if (!isValidDDD(formData.telefone)) {
+      errors.telefone = 'DDD inválido. Verifique o código de área';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.nome || !formData.email || !formData.telefone) {
-      toast.warning('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    if (!editingId && !formData.senha) {
-      toast.warning('A senha é obrigatória para novos entregadores');
+    if (!validateForm()) {
+      toast.warning('Por favor, corrija os erros no formulário');
       return;
     }
 
     try {
-      const dataToSend = { ...formData };
+      const dataToSend = { 
+        ...formData,
+        telefone: removeFormatting(formData.telefone)
+      };
+      
       if (editingId && !dataToSend.senha) {
         delete dataToSend.senha;
       }
@@ -143,7 +218,10 @@ function AdminDeliverers() {
       loadDeliverers();
     } catch (error) {
       console.error('Erro ao salvar entregador:', error);
-      toast.error(error.response?.data?.message || 'Erro ao salvar entregador');
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Erro ao salvar entregador';
+      toast.error(errorMessage);
     }
   };
 
@@ -153,9 +231,10 @@ function AdminDeliverers() {
       nome: deliverer.nome,
       email: deliverer.email,
       senha: '',
-      telefone: deliverer.telefone,
+      telefone: formatPhone(deliverer.telefone || ''),
       status_disponibilidade: deliverer.status_disponibilidade
     });
+    setFieldErrors({});
     setShowForm(true);
   };
 
@@ -191,6 +270,7 @@ function AdminDeliverers() {
       status_disponibilidade: 'Indisponivel'
     });
     setEditingId(null);
+    setFieldErrors({});
     setShowForm(false);
   };
 
@@ -267,8 +347,11 @@ function AdminDeliverers() {
                     name="nome"
                     value={formData.nome}
                     onChange={handleChange}
-                    required
+                    placeholder="Nome e Sobrenome"
+                    maxLength="255"
+                    className={fieldErrors.nome ? 'input-error' : ''}
                   />
+                  {fieldErrors.nome && <span className="field-error">{fieldErrors.nome}</span>}
                 </div>
 
                 <div className="form-group">
@@ -279,8 +362,10 @@ function AdminDeliverers() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
+                    placeholder="entregador@email.com"
+                    className={fieldErrors.email ? 'input-error' : ''}
                   />
+                  {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
                 </div>
 
                 <div className="form-group">
@@ -293,8 +378,10 @@ function AdminDeliverers() {
                     name="senha"
                     value={formData.senha}
                     onChange={handleChange}
-                    required={!editingId}
+                    placeholder={editingId ? 'Deixe em branco para manter' : 'Mínimo 6 caracteres'}
+                    className={fieldErrors.senha ? 'input-error' : ''}
                   />
+                  {fieldErrors.senha && <span className="field-error">{fieldErrors.senha}</span>}
                 </div>
 
                 <div className="form-group">
@@ -306,8 +393,10 @@ function AdminDeliverers() {
                     value={formData.telefone}
                     onChange={handleChange}
                     placeholder="(11) 98765-4321"
-                    required
+                    maxLength="15"
+                    className={fieldErrors.telefone ? 'input-error' : ''}
                   />
+                  {fieldErrors.telefone && <span className="field-error">{fieldErrors.telefone}</span>}
                 </div>
 
                 <div className="form-group">

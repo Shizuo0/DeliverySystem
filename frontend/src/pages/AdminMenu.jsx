@@ -82,6 +82,22 @@ function AdminMenu() {
       setError('Nome da categoria é obrigatório');
       return;
     }
+    
+    if (categoryForm.nome.trim().length < 2) {
+      setError('Nome da categoria deve ter no mínimo 2 caracteres');
+      return;
+    }
+    
+    if (categoryForm.nome.trim().length > 100) {
+      setError('Nome da categoria deve ter no máximo 100 caracteres');
+      return;
+    }
+    
+    // Verificar caracteres especiais perigosos
+    if (/[<>{}\[\]\\]/.test(categoryForm.nome)) {
+      setError('Nome da categoria contém caracteres não permitidos');
+      return;
+    }
 
     try {
       const dataToSend = {
@@ -143,16 +159,69 @@ function AdminMenu() {
   };
 
   const handleSaveItem = async () => {
+    // Validar nome
     if (!itemForm.nome.trim()) {
       setError('Nome do item é obrigatório');
       return;
     }
-    if (!itemForm.preco || itemForm.preco <= 0) {
+    
+    if (itemForm.nome.trim().length < 2) {
+      setError('Nome do item deve ter no mínimo 2 caracteres');
+      return;
+    }
+    
+    if (itemForm.nome.trim().length > 100) {
+      setError('Nome do item deve ter no máximo 100 caracteres');
+      return;
+    }
+    
+    // Verificar caracteres especiais perigosos no nome
+    if (/[<>{}\[\]\\]/.test(itemForm.nome)) {
+      setError('Nome do item contém caracteres não permitidos');
+      return;
+    }
+    
+    // Validar preço
+    const preco = parseFloat(itemForm.preco);
+    if (!itemForm.preco || isNaN(preco)) {
+      setError('Preço é obrigatório e deve ser um número válido');
+      return;
+    }
+    
+    if (preco <= 0) {
       setError('Preço deve ser maior que zero');
       return;
     }
+    
+    if (preco > 9999.99) {
+      setError('Preço não pode exceder R$ 9.999,99');
+      return;
+    }
+    
+    // Verificar casas decimais
+    const precoStr = itemForm.preco.toString();
+    if (precoStr.includes('.')) {
+      const decimals = precoStr.split('.')[1];
+      if (decimals && decimals.length > 2) {
+        setError('Preço deve ter no máximo 2 casas decimais');
+        return;
+      }
+    }
+    
+    // Validar categoria
     if (!itemForm.categoria_id) {
       setError('Selecione uma categoria');
+      return;
+    }
+    
+    // Validar descrição se fornecida
+    if (itemForm.descricao && itemForm.descricao.length > 500) {
+      setError('Descrição deve ter no máximo 500 caracteres');
+      return;
+    }
+    
+    if (itemForm.descricao && /[<>{}\[\]\\]/.test(itemForm.descricao)) {
+      setError('Descrição contém caracteres não permitidos');
       return;
     }
 
@@ -325,12 +394,13 @@ function AdminMenu() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h2>
             <div className="form-group">
-              <label>Nome</label>
+              <label>Nome *</label>
               <input
                 type="text"
                 value={categoryForm.nome}
                 onChange={(e) => setCategoryForm({ ...categoryForm, nome: e.target.value })}
                 placeholder="Ex: Pizzas, Bebidas, Sobremesas"
+                maxLength="100"
               />
             </div>
             <div className="form-group">
@@ -340,6 +410,7 @@ function AdminMenu() {
                 onChange={(e) => setCategoryForm({ ...categoryForm, descricao: e.target.value })}
                 placeholder="Descrição da categoria..."
                 rows="3"
+                maxLength="255"
               />
             </div>
             <div className="modal-actions">
@@ -360,12 +431,13 @@ function AdminMenu() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>{editingItem ? 'Editar Item' : 'Novo Item'}</h2>
             <div className="form-group">
-              <label>Nome</label>
+              <label>Nome *</label>
               <input
                 type="text"
                 value={itemForm.nome}
                 onChange={(e) => setItemForm({ ...itemForm, nome: e.target.value })}
                 placeholder="Nome do item"
+                maxLength="100"
               />
             </div>
             <div className="form-group">
@@ -375,17 +447,19 @@ function AdminMenu() {
                 onChange={(e) => setItemForm({ ...itemForm, descricao: e.target.value })}
                 placeholder="Descrição do item..."
                 rows="3"
+                maxLength="500"
               />
             </div>
             <div className="form-group">
-              <label>Preço (R$)</label>
+              <label>Preço (R$) *</label>
               <input
                 type="number"
                 value={itemForm.preco}
                 onChange={(e) => setItemForm({ ...itemForm, preco: e.target.value })}
                 placeholder="0.00"
                 step="0.01"
-                min="0"
+                min="0.01"
+                max="9999.99"
               />
             </div>
             <div className="form-group">

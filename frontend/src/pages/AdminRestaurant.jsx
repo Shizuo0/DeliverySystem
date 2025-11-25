@@ -8,7 +8,22 @@ import {
   createRestaurantAddress,
   updateRestaurantAddress
 } from '../services/restaurantService';
-import { formatPhone, removeFormatting, isValidPhone } from '../utils/formatters';
+import { 
+  formatPhone, 
+  formatCEP,
+  removeFormatting, 
+  isValidPhone,
+  isValidDDD,
+  isValidEmail,
+  isValidUsername,
+  isValidCEP,
+  isValidEstado,
+  isValidCidade,
+  isValidBairro,
+  isValidLogradouro,
+  isValidNumeroEndereco,
+  ESTADOS_VALIDOS
+} from '../utils/formatters';
 import Loading from '../components/Loading';
 import './AdminRestaurant.css';
 
@@ -45,6 +60,7 @@ function AdminRestaurant() {
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
+  const [addressErrors, setAddressErrors] = useState({});
 
   useEffect(() => {
     if (user?.id_restaurante) {
@@ -117,48 +133,142 @@ function AdminRestaurant() {
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
+    let formattedValue = value;
+    
+    if (name === 'cep') {
+      formattedValue = formatCEP(value);
+    } else if (name === 'estado') {
+      formattedValue = value.toUpperCase().slice(0, 2);
+    }
+    
     setAddressForm({
       ...addressForm,
-      [name]: value
+      [name]: formattedValue
     });
+    
+    if (addressErrors[name]) {
+      setAddressErrors({
+        ...addressErrors,
+        [name]: ''
+      });
+    }
   };
 
   const validateForm = () => {
     const errors = {};
 
+    // Validate username
     if (!formData.username.trim()) {
       errors.username = 'Username é obrigatório';
     } else if (formData.username.trim().length < 3) {
       errors.username = 'Username deve ter no mínimo 3 caracteres';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      errors.username = 'Username deve conter apenas letras, números e underscores';
+    } else if (!isValidUsername(formData.username)) {
+      if (/^\d/.test(formData.username)) {
+        errors.username = 'Username não pode começar com número';
+      } else if (/__/.test(formData.username)) {
+        errors.username = 'Username não pode ter underscores consecutivos';
+      } else {
+        errors.username = 'Username deve conter apenas letras, números e underscores';
+      }
     }
 
+    // Validate email
     if (!formData.email_admin.trim()) {
       errors.email_admin = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_admin)) {
-      errors.email_admin = 'Email inválido';
+    } else if (!isValidEmail(formData.email_admin)) {
+      errors.email_admin = 'Formato de email inválido';
     }
 
+    // Validate phone
     if (!formData.telefone) {
       errors.telefone = 'Telefone é obrigatório';
     } else if (!isValidPhone(formData.telefone)) {
-      errors.telefone = 'Telefone inválido';
+      errors.telefone = 'Telefone deve conter 10 ou 11 dígitos';
+    } else if (!isValidDDD(formData.telefone)) {
+      errors.telefone = 'DDD inválido';
     }
 
-    if (!formData.tempo_entrega_estimado) {
+    // Validate delivery time
+    if (!formData.tempo_entrega_estimado && formData.tempo_entrega_estimado !== 0) {
       errors.tempo_entrega_estimado = 'Tempo de entrega é obrigatório';
-    } else if (formData.tempo_entrega_estimado < 0) {
-      errors.tempo_entrega_estimado = 'Tempo deve ser positivo';
+    } else {
+      const tempo = parseInt(formData.tempo_entrega_estimado);
+      if (isNaN(tempo) || tempo < 0) {
+        errors.tempo_entrega_estimado = 'Tempo deve ser um número positivo';
+      } else if (tempo > 180) {
+        errors.tempo_entrega_estimado = 'Tempo não pode exceder 180 minutos';
+      }
     }
 
-    if (!formData.taxa_entrega) {
+    // Validate delivery fee
+    if (!formData.taxa_entrega && formData.taxa_entrega !== 0) {
       errors.taxa_entrega = 'Taxa de entrega é obrigatória';
-    } else if (formData.taxa_entrega < 0) {
-      errors.taxa_entrega = 'Taxa deve ser positiva';
+    } else {
+      const taxa = parseFloat(formData.taxa_entrega);
+      if (isNaN(taxa) || taxa < 0) {
+        errors.taxa_entrega = 'Taxa deve ser um número positivo';
+      } else if (taxa > 100) {
+        errors.taxa_entrega = 'Taxa não pode exceder R$ 100,00';
+      }
     }
 
     setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAddressForm = () => {
+    const errors = {};
+    
+    // Validate logradouro
+    if (!addressForm.logradouro || !addressForm.logradouro.trim()) {
+      errors.logradouro = 'Logradouro é obrigatório';
+    } else if (addressForm.logradouro.trim().length < 3) {
+      errors.logradouro = 'Logradouro deve ter no mínimo 3 caracteres';
+    } else if (!isValidLogradouro(addressForm.logradouro)) {
+      errors.logradouro = 'Logradouro deve conter pelo menos uma letra';
+    }
+    
+    // Validate numero
+    if (!addressForm.numero || !addressForm.numero.trim()) {
+      errors.numero = 'Número é obrigatório';
+    } else if (!isValidNumeroEndereco(addressForm.numero)) {
+      errors.numero = 'Número deve conter apenas dígitos (ex: 123, 45A) ou S/N';
+    }
+    
+    // Validate bairro
+    if (!addressForm.bairro || !addressForm.bairro.trim()) {
+      errors.bairro = 'Bairro é obrigatório';
+    } else if (!isValidBairro(addressForm.bairro)) {
+      errors.bairro = 'Bairro contém caracteres inválidos';
+    }
+    
+    // Validate cidade
+    if (!addressForm.cidade || !addressForm.cidade.trim()) {
+      errors.cidade = 'Cidade é obrigatória';
+    } else if (!isValidCidade(addressForm.cidade)) {
+      errors.cidade = 'Cidade deve conter apenas letras';
+    }
+    
+    // Validate estado
+    if (!addressForm.estado || !addressForm.estado.trim()) {
+      errors.estado = 'Estado é obrigatório';
+    } else if (!isValidEstado(addressForm.estado)) {
+      errors.estado = 'Estado inválido. Use uma sigla válida (ex: SP, RJ)';
+    }
+    
+    // Validate CEP
+    if (!addressForm.cep || !addressForm.cep.trim()) {
+      errors.cep = 'CEP é obrigatório';
+    } else {
+      const cepNumbers = removeFormatting(addressForm.cep);
+      if (cepNumbers.length !== 8) {
+        errors.cep = 'CEP deve conter 8 dígitos';
+      } else if (!isValidCEP(addressForm.cep)) {
+        errors.cep = 'CEP inválido';
+      }
+    }
+    
+    setAddressErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
@@ -271,23 +381,39 @@ function AdminRestaurant() {
   const handleSaveAddress = async () => {
     setError('');
     setSuccess('');
+    
+    if (!validateAddressForm()) {
+      return;
+    }
+    
     setSaving(true);
 
     try {
+      // Prepare data with formatted values
+      const dataToSend = {
+        ...addressForm,
+        cep: removeFormatting(addressForm.cep),
+        estado: addressForm.estado.toUpperCase()
+      };
+      
       let response;
       if (address) {
-        response = await updateRestaurantAddress(addressForm);
+        response = await updateRestaurantAddress(dataToSend);
       } else {
-        response = await createRestaurantAddress(addressForm);
+        response = await createRestaurantAddress(dataToSend);
       }
       
       // The API returns { message, endereco }
       setAddress(response.endereco);
       setSuccess('Endereço atualizado com sucesso!');
       setIsEditingAddress(false);
+      setAddressErrors({});
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar endereço');
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          'Erro ao salvar endereço';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -526,7 +652,11 @@ function AdminRestaurant() {
                   onChange={handleAddressChange}
                   disabled={saving}
                   placeholder="Rua, Avenida, etc."
+                  className={addressErrors.logradouro ? 'input-error' : ''}
                 />
+                {addressErrors.logradouro && (
+                  <span className="field-error">{addressErrors.logradouro}</span>
+                )}
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label htmlFor="numero">Número</label>
@@ -537,7 +667,13 @@ function AdminRestaurant() {
                   value={addressForm.numero}
                   onChange={handleAddressChange}
                   disabled={saving}
+                  placeholder="123 ou S/N"
+                  maxLength="10"
+                  className={addressErrors.numero ? 'input-error' : ''}
                 />
+                {addressErrors.numero && (
+                  <span className="field-error">{addressErrors.numero}</span>
+                )}
               </div>
             </div>
 
@@ -564,7 +700,11 @@ function AdminRestaurant() {
                   value={addressForm.bairro}
                   onChange={handleAddressChange}
                   disabled={saving}
+                  className={addressErrors.bairro ? 'input-error' : ''}
                 />
+                {addressErrors.bairro && (
+                  <span className="field-error">{addressErrors.bairro}</span>
+                )}
               </div>
               <div className="form-group">
                 <label htmlFor="cep">CEP</label>
@@ -576,7 +716,12 @@ function AdminRestaurant() {
                   onChange={handleAddressChange}
                   disabled={saving}
                   placeholder="00000-000"
+                  maxLength="9"
+                  className={addressErrors.cep ? 'input-error' : ''}
                 />
+                {addressErrors.cep && (
+                  <span className="field-error">{addressErrors.cep}</span>
+                )}
               </div>
             </div>
 
@@ -590,7 +735,11 @@ function AdminRestaurant() {
                   value={addressForm.cidade}
                   onChange={handleAddressChange}
                   disabled={saving}
+                  className={addressErrors.cidade ? 'input-error' : ''}
                 />
+                {addressErrors.cidade && (
+                  <span className="field-error">{addressErrors.cidade}</span>
+                )}
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label htmlFor="estado">Estado</label>
@@ -603,7 +752,11 @@ function AdminRestaurant() {
                   disabled={saving}
                   maxLength="2"
                   placeholder="UF"
+                  className={addressErrors.estado ? 'input-error' : ''}
                 />
+                {addressErrors.estado && (
+                  <span className="field-error">{addressErrors.estado}</span>
+                )}
               </div>
             </div>
 

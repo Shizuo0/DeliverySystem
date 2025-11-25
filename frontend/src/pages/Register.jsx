@@ -9,7 +9,13 @@ import {
   isValidCPF, 
   isValidCNPJ,
   isValidEmail, 
-  isValidPhone 
+  isValidPhone,
+  isValidDDD,
+  isValidNome,
+  isValidNomeRestaurante,
+  isValidUsername,
+  validatePassword,
+  validateFullName
 } from '../utils/formatters';
 import './Auth.css';
 
@@ -43,6 +49,8 @@ function Register() {
       formattedValue = formatCNPJ(value);
     } else if (name === 'telefone') {
       formattedValue = formatPhone(value);
+    } else if (name === 'estado') {
+      formattedValue = value.toUpperCase();
     }
     
     setFormData({
@@ -62,59 +70,100 @@ function Register() {
   const validateForm = () => {
     const errors = {};
     
+    // Validate name
     if (!formData.nome.trim()) {
       errors.nome = userType === 'restaurante' ? 'Nome do restaurante é obrigatório' : 'Nome completo é obrigatório';
     } else if (formData.nome.trim().length < 3) {
       errors.nome = 'Nome deve ter no mínimo 3 caracteres';
+    } else if (userType === 'cliente') {
+      // Full name validation for clients
+      const nameValidation = validateFullName(formData.nome);
+      if (!nameValidation.valid) {
+        errors.nome = nameValidation.errors[0];
+      }
+    } else {
+      // Restaurant name validation
+      if (!isValidNomeRestaurante(formData.nome)) {
+        errors.nome = 'Nome do restaurante contém caracteres inválidos. Use apenas letras, números, espaços e caracteres como & . -';
+      }
     }
 
+    // Validate username
     if (!formData.username.trim()) {
       errors.username = 'Username é obrigatório';
     } else if (formData.username.trim().length < 3) {
       errors.username = 'Username deve ter no mínimo 3 caracteres';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      errors.username = 'Username deve conter apenas letras, números e underscores';
+    } else if (!isValidUsername(formData.username)) {
+      if (/^\d/.test(formData.username)) {
+        errors.username = 'Username não pode começar com número';
+      } else if (/__/.test(formData.username)) {
+        errors.username = 'Username não pode ter underscores consecutivos';
+      } else {
+        errors.username = 'Username deve conter apenas letras, números e underscores (_)';
+      }
     }
     
+    // Validate email
     if (!formData.email.trim()) {
       errors.email = 'Email é obrigatório';
     } else if (!isValidEmail(formData.email)) {
-      errors.email = 'Email inválido';
+      errors.email = 'Formato de email inválido. Use um email válido como exemplo@dominio.com';
     }
     
+    // Validate password
     if (!formData.senha) {
       errors.senha = 'Senha é obrigatória';
-    } else if (formData.senha.length < 6) {
-      errors.senha = 'Senha deve ter no mínimo 6 caracteres';
+    } else {
+      const passwordValidation = validatePassword(formData.senha);
+      if (!passwordValidation.valid) {
+        errors.senha = passwordValidation.errors[0];
+      }
     }
     
+    // Validate password confirmation
     if (!formData.confirmarSenha) {
       errors.confirmarSenha = 'Confirmação de senha é obrigatória';
     } else if (formData.senha !== formData.confirmarSenha) {
       errors.confirmarSenha = 'As senhas não coincidem';
     }
     
+    // Validate phone
     if (!formData.telefone) {
       errors.telefone = 'Telefone é obrigatório';
     } else if (!isValidPhone(formData.telefone)) {
-      errors.telefone = 'Telefone inválido';
+      errors.telefone = 'Telefone deve conter 10 dígitos (fixo) ou 11 dígitos (celular)';
+    } else if (!isValidDDD(formData.telefone)) {
+      errors.telefone = 'DDD inválido. Verifique o código de área';
     }
     
     if (userType === 'cliente') {
+      // CPF validation
       if (!formData.cpf) {
         errors.cpf = 'CPF é obrigatório';
-      } else if (!isValidCPF(formData.cpf)) {
-        errors.cpf = 'CPF inválido';
+      } else {
+        const cpfNumbers = removeFormatting(formData.cpf);
+        if (cpfNumbers.length !== 11) {
+          errors.cpf = 'CPF deve conter exatamente 11 dígitos';
+        } else if (!isValidCPF(formData.cpf)) {
+          errors.cpf = 'CPF inválido. Verifique os dígitos e tente novamente';
+        }
       }
     } else {
       // Restaurant specific validations
       if (!formData.tipo_cozinha) {
         errors.tipo_cozinha = 'Tipo de cozinha é obrigatório';
       }
+      
+      // CNPJ validation
       if (!formData.cnpj) {
         errors.cnpj = 'CNPJ é obrigatório';
-      } else if (!isValidCNPJ(formData.cnpj)) {
-        errors.cnpj = 'CNPJ inválido';
+      } else {
+        const cnpjNumbers = removeFormatting(formData.cnpj);
+        if (cnpjNumbers.length !== 14) {
+          errors.cnpj = 'CNPJ deve conter exatamente 14 dígitos';
+        } else if (!isValidCNPJ(formData.cnpj)) {
+          errors.cnpj = 'CNPJ inválido. Verifique os dígitos e tente novamente';
+        }
       }
     }
     
@@ -213,6 +262,7 @@ function Register() {
             onChange={handleChange}
             placeholder={userType === 'restaurante' ? "Restaurante Saboroso" : "João Silva"}
             disabled={loading}
+            maxLength="100"
             className={fieldErrors.nome ? 'input-error' : ''}
           />
           {fieldErrors.nome && <span className="field-error">{fieldErrors.nome}</span>}
@@ -229,6 +279,7 @@ function Register() {
             onChange={handleChange}
             placeholder="seu_username"
             disabled={loading}
+            maxLength="50"
             className={fieldErrors.username ? 'input-error' : ''}
           />
           {fieldErrors.username && <span className="field-error">{fieldErrors.username}</span>}
@@ -245,6 +296,7 @@ function Register() {
             onChange={handleChange}
             placeholder="seu@email.com"
             disabled={loading}
+            maxLength="100"
             className={fieldErrors.email ? 'input-error' : ''}
           />
           {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}

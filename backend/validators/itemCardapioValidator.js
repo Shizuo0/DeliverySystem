@@ -8,16 +8,29 @@ const createItemCardapioValidation = [
   body('nome')
     .trim()
     .notEmpty().withMessage('Nome do item é obrigatório')
-    .isLength({ min: 2, max: 255 }).withMessage('Nome deve ter entre 2 e 255 caracteres'),
+    .isLength({ min: 2, max: 100 }).withMessage('Nome deve ter entre 2 e 100 caracteres')
+    .custom((value) => {
+      // Verificar caracteres perigosos
+      if (/[<>{}[\]\\]/.test(value)) {
+        throw new Error('Nome contém caracteres não permitidos');
+      }
+      return true;
+    }),
   
   body('descricao')
     .optional()
     .trim()
-    .isLength({ max: 1000 }).withMessage('Descrição deve ter no máximo 1000 caracteres'),
+    .isLength({ max: 500 }).withMessage('Descrição deve ter no máximo 500 caracteres')
+    .custom((value) => {
+      if (value && /[<>{}[\]\\]/.test(value)) {
+        throw new Error('Descrição contém caracteres não permitidos');
+      }
+      return true;
+    }),
   
   body('preco')
     .notEmpty().withMessage('Preço é obrigatório')
-    .isFloat({ min: 0.01 }).withMessage('Preço deve ser um valor maior que zero')
+    .isFloat({ min: 0.01, max: 9999.99 }).withMessage('Preço deve estar entre R$ 0,01 e R$ 9.999,99')
     .custom((value) => {
       // Verificar se tem no máximo 2 casas decimais
       const decimal = value.toString().split('.')[1];
@@ -40,16 +53,28 @@ const updateItemCardapioValidation = [
   body('nome')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 255 }).withMessage('Nome deve ter entre 2 e 255 caracteres'),
+    .isLength({ min: 2, max: 100 }).withMessage('Nome deve ter entre 2 e 100 caracteres')
+    .custom((value) => {
+      if (value && /[<>{}[\]\\]/.test(value)) {
+        throw new Error('Nome contém caracteres não permitidos');
+      }
+      return true;
+    }),
   
   body('descricao')
     .optional()
     .trim()
-    .isLength({ max: 1000 }).withMessage('Descrição deve ter no máximo 1000 caracteres'),
+    .isLength({ max: 500 }).withMessage('Descrição deve ter no máximo 500 caracteres')
+    .custom((value) => {
+      if (value && /[<>{}[\]\\]/.test(value)) {
+        throw new Error('Descrição contém caracteres não permitidos');
+      }
+      return true;
+    }),
   
   body('preco')
     .optional()
-    .isFloat({ min: 0.01 }).withMessage('Preço deve ser um valor maior que zero')
+    .isFloat({ min: 0.01, max: 9999.99 }).withMessage('Preço deve estar entre R$ 0,01 e R$ 9.999,99')
     .custom((value) => {
       // Verificar se tem no máximo 2 casas decimais
       const decimal = value.toString().split('.')[1];

@@ -4,6 +4,18 @@ import { useToast } from '../context/ToastContext';
 import api from '../services/api';
 import Loading from '../components/Loading';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { 
+  formatCEP, 
+  removeFormatting,
+  isValidCEP,
+  isValidEstado,
+  isValidCidade,
+  isValidBairro,
+  isValidLogradouro,
+  isValidNumeroEndereco,
+  validateAddress,
+  ESTADOS_VALIDOS
+} from '../utils/formatters';
 import './ProfileAddresses.css';
 
 function ProfileAddresses() {
@@ -15,6 +27,7 @@ function ProfileAddresses() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     logradouro: '',
     numero: '',
@@ -46,23 +59,104 @@ function ProfileAddresses() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    let formattedValue = value;
+    
+    // Apply formatting
+    if (name === 'cep') {
+      formattedValue = formatCEP(value);
+    } else if (name === 'estado') {
+      formattedValue = value.toUpperCase().slice(0, 2);
+    }
+    
+    setFormData({ ...formData, [name]: formattedValue });
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: '' });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate logradouro
+    if (!formData.logradouro || !formData.logradouro.trim()) {
+      errors.logradouro = 'Logradouro é obrigatório';
+    } else if (formData.logradouro.trim().length < 3) {
+      errors.logradouro = 'Logradouro deve ter no mínimo 3 caracteres';
+    } else if (!isValidLogradouro(formData.logradouro)) {
+      errors.logradouro = 'Logradouro deve conter pelo menos uma letra';
+    }
+    
+    // Validate numero
+    if (!formData.numero || !formData.numero.trim()) {
+      errors.numero = 'Número é obrigatório';
+    } else if (!isValidNumeroEndereco(formData.numero)) {
+      errors.numero = 'Número deve conter apenas dígitos (ex: 123, 45A) ou S/N';
+    }
+    
+    // Validate bairro
+    if (!formData.bairro || !formData.bairro.trim()) {
+      errors.bairro = 'Bairro é obrigatório';
+    } else if (formData.bairro.trim().length < 2) {
+      errors.bairro = 'Bairro deve ter no mínimo 2 caracteres';
+    } else if (!isValidBairro(formData.bairro)) {
+      errors.bairro = 'Bairro contém caracteres inválidos';
+    }
+    
+    // Validate cidade
+    if (!formData.cidade || !formData.cidade.trim()) {
+      errors.cidade = 'Cidade é obrigatória';
+    } else if (formData.cidade.trim().length < 2) {
+      errors.cidade = 'Cidade deve ter no mínimo 2 caracteres';
+    } else if (!isValidCidade(formData.cidade)) {
+      errors.cidade = 'Cidade deve conter apenas letras, espaços e acentos';
+    }
+    
+    // Validate estado
+    if (!formData.estado || !formData.estado.trim()) {
+      errors.estado = 'Estado é obrigatório';
+    } else if (!isValidEstado(formData.estado)) {
+      errors.estado = 'Estado inválido. Use uma sigla válida (ex: SP, RJ, MG)';
+    }
+    
+    // Validate CEP
+    if (!formData.cep || !formData.cep.trim()) {
+      errors.cep = 'CEP é obrigatório';
+    } else {
+      const cepNumbers = removeFormatting(formData.cep);
+      if (cepNumbers.length !== 8) {
+        errors.cep = 'CEP deve conter exatamente 8 dígitos';
+      } else if (!isValidCEP(formData.cep)) {
+        errors.cep = 'CEP inválido. Verifique o número e tente novamente';
+      }
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.logradouro || !formData.numero || !formData.bairro || !formData.cidade || !formData.estado || !formData.cep) {
-      toast.warning('Preencha todos os campos obrigatórios');
+    if (!validateForm()) {
+      toast.warning('Por favor, corrija os erros no formulário');
       return;
     }
 
     try {
+      // Prepare data with formatted CEP (numbers only)
+      const dataToSend = {
+        ...formData,
+        cep: removeFormatting(formData.cep),
+        estado: formData.estado.toUpperCase()
+      };
+      
       if (editingId) {
-        await api.put(`/clientes/enderecos/${editingId}`, formData);
+        await api.put(`/clientes/enderecos/${editingId}`, dataToSend);
         toast.success('Endereço atualizado com sucesso');
       } else {
-        await api.post('/clientes/enderecos', formData);
+        await api.post('/clientes/enderecos', dataToSend);
         toast.success('Endereço cadastrado com sucesso');
       }
 
@@ -70,7 +164,10 @@ function ProfileAddresses() {
       loadAddresses();
     } catch (error) {
       console.error('Erro ao salvar endereço:', error);
-      toast.error(error.response?.data?.message || 'Erro ao salvar endereço');
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Erro ao salvar endereço';
+      toast.error(errorMessage);
     }
   };
 
@@ -83,9 +180,10 @@ function ProfileAddresses() {
       bairro: address.bairro,
       cidade: address.cidade,
       estado: address.estado,
-      cep: address.cep,
+      cep: formatCEP(address.cep || ''),
       nome_identificador: address.nome_identificador || ''
     });
+    setFieldErrors({});
     setShowForm(true);
   };
 
@@ -113,6 +211,7 @@ function ProfileAddresses() {
       nome_identificador: ''
     });
     setEditingId(null);
+    setFieldErrors({});
     setShowForm(false);
   };
 
@@ -127,7 +226,7 @@ function ProfileAddresses() {
           <h2>📍 Meus Endereços</h2>
           <p>Gerencie seus endereços de entrega</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
+        <button className="btn-primary" onClick={() => { setShowForm(true); setFieldErrors({}); }}>
           ➕ Novo Endereço
         </button>
       </div>
@@ -151,6 +250,7 @@ function ProfileAddresses() {
                     value={formData.nome_identificador}
                     onChange={handleChange}
                     placeholder="Casa"
+                    maxLength="45"
                   />
                 </div>
 
@@ -163,8 +263,10 @@ function ProfileAddresses() {
                     value={formData.cep}
                     onChange={handleChange}
                     placeholder="12345-678"
-                    required
+                    maxLength="9"
+                    className={fieldErrors.cep ? 'input-error' : ''}
                   />
+                  {fieldErrors.cep && <span className="field-error">{fieldErrors.cep}</span>}
                 </div>
               </div>
 
@@ -178,8 +280,10 @@ function ProfileAddresses() {
                     value={formData.logradouro}
                     onChange={handleChange}
                     placeholder="Rua, Avenida..."
-                    required
+                    maxLength="255"
+                    className={fieldErrors.logradouro ? 'input-error' : ''}
                   />
+                  {fieldErrors.logradouro && <span className="field-error">{fieldErrors.logradouro}</span>}
                 </div>
 
                 <div className="form-group flex-1">
@@ -190,9 +294,11 @@ function ProfileAddresses() {
                     name="numero"
                     value={formData.numero}
                     onChange={handleChange}
-                    placeholder="123"
-                    required
+                    placeholder="123 ou S/N"
+                    maxLength="10"
+                    className={fieldErrors.numero ? 'input-error' : ''}
                   />
+                  {fieldErrors.numero && <span className="field-error">{fieldErrors.numero}</span>}
                 </div>
               </div>
 
@@ -205,6 +311,7 @@ function ProfileAddresses() {
                   value={formData.complemento}
                   onChange={handleChange}
                   placeholder="Apto, Bloco, etc."
+                  maxLength="100"
                 />
               </div>
 
@@ -218,8 +325,10 @@ function ProfileAddresses() {
                     value={formData.bairro}
                     onChange={handleChange}
                     placeholder="Centro"
-                    required
+                    maxLength="100"
+                    className={fieldErrors.bairro ? 'input-error' : ''}
                   />
+                  {fieldErrors.bairro && <span className="field-error">{fieldErrors.bairro}</span>}
                 </div>
 
                 <div className="form-group flex-2">
@@ -231,22 +340,27 @@ function ProfileAddresses() {
                     value={formData.cidade}
                     onChange={handleChange}
                     placeholder="São Paulo"
-                    required
+                    maxLength="100"
+                    className={fieldErrors.cidade ? 'input-error' : ''}
                   />
+                  {fieldErrors.cidade && <span className="field-error">{fieldErrors.cidade}</span>}
                 </div>
 
                 <div className="form-group flex-1">
                   <label htmlFor="estado">UF *</label>
-                  <input
-                    type="text"
+                  <select
                     id="estado"
                     name="estado"
                     value={formData.estado}
                     onChange={handleChange}
-                    placeholder="SP"
-                    maxLength="2"
-                    required
-                  />
+                    className={fieldErrors.estado ? 'input-error' : ''}
+                  >
+                    <option value="">UF</option>
+                    {ESTADOS_VALIDOS.map(uf => (
+                      <option key={uf} value={uf}>{uf}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.estado && <span className="field-error">{fieldErrors.estado}</span>}
                 </div>
               </div>
 

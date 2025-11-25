@@ -118,6 +118,7 @@ function Login() {
             onChange={handleChange}
             placeholder={userType === 'restaurante' ? "admin@restaurante.com" : "seu@email.com"}
             disabled={loading}
+            maxLength="100"
             className={fieldErrors.email ? 'input-error' : ''}
           />
           {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
@@ -132,6 +133,7 @@ function Login() {
             onChange={handleChange}
             placeholder="••••••••"
             disabled={loading}
+            maxLength="50"
             className={fieldErrors.senha ? 'input-error' : ''}
           />
           {fieldErrors.senha && <span className="field-error">{fieldErrors.senha}</span>}
